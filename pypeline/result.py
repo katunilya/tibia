@@ -124,6 +124,12 @@ class Result[_TOk, _TErr](ABC):
 
         return _safe
 
+    def is_ok(self):
+        return isinstance(self, Ok)
+
+    def is_err(self):
+        return isinstance(self, Err)
+
     def unwrap(self) -> _TOk:
         if not isinstance(self, Ok):
             err_result = cast(Err[_TErr], self)
