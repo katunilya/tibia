@@ -2,20 +2,113 @@ from __future__ import annotations
 
 from abc import ABC
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Awaitable, Callable, cast
 
 from pypeline import pipeline, result
 
 
-class AsyncMaybe[_TValue](ABC): ...
-
-
 @dataclass(slots=True)
-class AsyncSome[_TValue](AsyncMaybe[_TValue]): ...
+class AsyncMaybe[_TValue](ABC):
+    value: Awaitable[Maybe[_TValue]]
 
+    @staticmethod
+    def safe[**_ParamSpec](
+        func: Callable[_ParamSpec, Awaitable[_TValue | None]],
+    ) -> Callable[_ParamSpec, AsyncMaybe[_TValue]]:
+        def _safe(*args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs):
+            async def __safe():
+                result = await func(*args, **kwargs)
+                if result is None:
+                    return Maybe[_TValue].empty()
 
-@dataclass(slots=True)
-class AsyncEmpty(AsyncMaybe[Any]): ...
+                return Maybe[_TValue].some(result)
+
+            return AsyncMaybe[_TValue](__safe())
+
+        return _safe
+
+    async def unwrap(self):
+        return (await self.value).unwrap()
+
+    async def unwrap_or(self, other: _TValue | Callable[[], _TValue]):
+        return (await self.value).unwrap_or(other)
+
+    async def unwrap_as_optional(self):
+        return (await self.value).unwrap_as_optional()
+
+    def unwrap_as_pipeline(self):
+        return pipeline.AsyncPipeline(self.unwrap())
+
+    def unwrap_as_pipeline_or(self, other: _TValue | Callable[[], _TValue]):
+        return pipeline.AsyncPipeline(self.unwrap_or(other))
+
+    def unwrap_as_result(self):
+        async def _unwrap_as_result():
+            return (await self.value).unwrap_as_result()
+
+        return result.AsyncResult(_unwrap_as_result())
+
+    def unwrap_as_result_or(self, other: _TValue | Callable[[], _TValue]):
+        async def _unwrap_as_result_or():
+            return (await self.value).unwrap_as_result_or(other)
+
+        return result.AsyncResult(_unwrap_as_result_or())
+
+    def map[_TResult](self, func: Callable[[_TValue], _TResult]):
+        async def _map():
+            return (await self.value).map(func)
+
+        return AsyncMaybe(_map())
+
+    def then[_TResult](
+        self, func: Callable[[_TValue], _TResult]
+    ) -> Awaitable[_TResult]:
+        async def _then():
+            return (await self.value).then(func)
+
+        return _then()
+
+    def then_or[_TResult](
+        self,
+        func: Callable[[_TValue], _TResult],
+        other: _TResult | Callable[[], _TResult],
+    ) -> Awaitable[_TResult]:
+        async def _then_or():
+            return (await self.value).then_or(func, other)
+
+        return _then_or()
+
+    def map_async[_TResult](self, func: Callable[[_TValue], Awaitable[_TResult]]):
+        async def _map_async():
+            maybe = await self.value
+            if isinstance(maybe, Some):
+                return Maybe[_TResult].some(await func(maybe.value))
+
+            raise ValueError("is empty")
+
+        return AsyncMaybe(_map_async())
+
+    def then_async[_TResult](
+        self, func: Callable[[_TValue], Awaitable[_TResult]]
+    ) -> Awaitable[_TResult]:
+        async def _then_async():
+            return await func((await self.value).unwrap())
+
+        return _then_async()
+
+    def then_or_async[_TResult](
+        self,
+        func: Callable[[_TValue], Awaitable[_TResult]],
+        other: _TResult | Callable[[], _TResult],
+    ) -> Awaitable[_TResult]:
+        async def _then_or_async():
+            maybe = await self.value
+            if isinstance(maybe, Some):
+                return await func(maybe.value)
+
+            return cast(_TResult, other() if isinstance(other, Callable) else other)
+
+        return _then_or_async()
 
 
 class Maybe[_TValue](ABC):
@@ -60,7 +153,7 @@ class Maybe[_TValue](ABC):
 
     def unwrap_or(self, other: _TValue | Callable[[], _TValue]) -> _TValue:
         if not isinstance(self, Some):
-            return other() if isinstance(other, Callable) else other  # type: ignore
+            return cast(_TValue, other() if isinstance(other, Callable) else other)
 
         return self.value
 
@@ -79,7 +172,7 @@ class Maybe[_TValue](ABC):
     def unwrap_as_result_or(self, other: _TValue | Callable[[], _TValue]):
         if not isinstance(self, Some):
             return result.Result[_TValue, Exception].ok(
-                other() if isinstance(other, Callable) else other  # type: ignore
+                cast(_TValue, other() if isinstance(other, Callable) else other)
             )
 
         return result.Result[_TValue, Exception].ok(self.value)
@@ -97,16 +190,64 @@ class Maybe[_TValue](ABC):
         return pipeline.Pipeline[_TValue | None](self.value)
 
     def unwrap_as_pipeline_or(self, other: _TValue | Callable[[], _TValue]):
-        if not isinstance(self, Some):
-            return pipeline.Pipeline[_TValue](
-                other() if isinstance(other, Callable) else other  # type: ignore
-            )
+        _value = (
+            self.value
+            if isinstance(self, Some)
+            else cast(_TValue, other() if isinstance(other, Callable) else other)
+        )
+        return pipeline.Pipeline(_value)
 
-        return pipeline.Pipeline(self.value)
+    def map[_TResult](self, func: Callable[[_TValue], _TResult]):
+        if isinstance(self, Some):
+            return Maybe[_TResult].some(func(self.value))
 
-    def map(self): ...
+        return cast(Maybe[_TResult], self)
 
-    def then(self): ...
+    def then[_TResult](self, func: Callable[[_TValue], _TResult]):
+        return func(self.unwrap())
+
+    def then_or[_TResult](
+        self,
+        func: Callable[[_TValue], _TResult],
+        other: _TResult | Callable[[], _TResult],
+    ):
+        if isinstance(self, Some):
+            return func(self.value)
+
+        return cast(_TResult, other() if isinstance(other, Callable) else other)
+
+    def map_async[_TResult](self, func: Callable[[_TValue], Awaitable[_TResult]]):
+        async def _map_async():
+            if isinstance(self, Some):
+                return Maybe[_TResult].some(await func(self.value))
+
+            return cast(Maybe[_TResult], self)
+
+        return AsyncMaybe(_map_async())
+
+    def then_async[_TResult](
+        self, func: Callable[[_TValue], Awaitable[_TResult]]
+    ) -> Awaitable[_TResult]:
+        async def _then_async():
+            if isinstance(self, Some):
+                return await func(self.value)
+
+            raise ValueError("is empty")
+
+        return _then_async()
+
+    def then_or_async[_TResult](
+        self,
+        func: Callable[[_TValue], Awaitable[_TResult]],
+        other: _TResult | Callable[[], _TResult],
+    ) -> Awaitable[_TResult]:
+        async def _then_or_async():
+            if isinstance(self, Some):
+                return await func(self.value)
+
+            return cast(_TResult, other() if isinstance(other, Callable) else other)
+
+        return _then_or_async()
 
 
 @dataclass(slots=True)

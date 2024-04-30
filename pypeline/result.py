@@ -5,12 +5,11 @@ from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, cast
 
 from pypeline import maybe, pipeline
-from pypeline.utils import async_identity
 
 
 @dataclass(slots=True)
 class AsyncResult[_TOk, _TErr]:
-    value: Awaitable[Result[_TOk, _TErr]]  # type: ignore
+    value: Awaitable[Result[_TOk, _TErr]]
 
     @staticmethod
     def safe[**_ParamSpec](
@@ -39,8 +38,17 @@ class AsyncResult[_TOk, _TErr]:
     def unwrap_as_pipeline_or(self, other: Callable[[], _TOk]):
         return pipeline.AsyncPipeline(self.unwrap_or(other))
 
-    # TODO impl unwrap_as_maybe; BLOCK impl AsyncMaybe
-    # TODO impl unwrap_as_maybe_or; BLOCK impl AsyncMaybe
+    def unwrap_as_maybe(self):
+        async def _unwrap_as_maybe():
+            return (await self.value).unwrap_as_maybe()
+
+        return maybe.AsyncMaybe(_unwrap_as_maybe())
+
+    def unwrap_as_maybe_or(self, other: _TOk | Callable[[], _TOk]):
+        async def _unwrap_as_maybe_or():
+            return (await self.value).unwrap_as_maybe_or(other)
+
+        return maybe.AsyncMaybe(_unwrap_as_maybe_or())
 
     def map[_TResult](
         self, func: Callable[[_TOk], _TResult]
@@ -58,7 +66,7 @@ class AsyncResult[_TOk, _TErr]:
 
             if isinstance(result, Ok):
                 return Ok(await func(result.value))
-            return result  # type: ignore
+            return cast(Result[_TResult, _TErr], result)
 
         return AsyncResult(_map_async())
 
@@ -118,13 +126,14 @@ class Result[_TOk, _TErr](ABC):
 
     def unwrap(self) -> _TOk:
         if not isinstance(self, Ok):
-            raise ValueError("not ok", self.value)  # type: ignore
+            err_result = cast(Err[_TErr], self)
+            raise ValueError("not ok", err_result.value)
 
         return self.value
 
     def unwrap_or(self, other: _TOk | Callable[[], _TOk]) -> _TOk:
         if not isinstance(self, Ok):
-            return other() if isinstance(other, Callable) else other  # type: ignore
+            return cast(_TOk, other() if isinstance(other, Callable) else other)
 
         return self.value
 
@@ -148,7 +157,7 @@ class Result[_TOk, _TErr](ABC):
         if isinstance(self, Ok):
             return Ok(func(self.value))
 
-        return self  # type: ignore
+        return cast(Result[_TResult, _TErr], self)
 
     def map_async[_TResult](
         self, func: Callable[[_TOk], Awaitable[_TResult]]
@@ -157,7 +166,7 @@ class Result[_TOk, _TErr](ABC):
             if isinstance(self, Ok):
                 return Ok(await func(self.value))
 
-            return self  # type: ignore
+            return cast(Result[_TResult, _TErr], self)
 
         return AsyncResult(_map_async())
 
@@ -168,8 +177,11 @@ class Result[_TOk, _TErr](ABC):
     def then_async[_TResult](
         self, func: Callable[[_TOk], Awaitable[_TResult]]
     ) -> Awaitable[_TResult]:
-        value = self.unwrap()
-        return func(value)
+        async def _then_async():
+            value = self.unwrap()
+            return await func(value)
+
+        return _then_async()
 
     def then_or[_TResult](
         self, func: Callable[[_TOk], _TResult], other: _TResult | Callable[[], _TResult]
@@ -181,12 +193,13 @@ class Result[_TOk, _TErr](ABC):
         func: Callable[[_TOk], Awaitable[_TResult]],
         other: _TResult | Callable[[], _TResult],
     ) -> Awaitable[_TResult]:
-        if isinstance(self, Ok):
-            return func(self.value)
+        async def _then_or_async():
+            if isinstance(self, Ok):
+                return await func(self.value)
 
-        _other = cast(_TResult, other() if isinstance(other, Callable) else other)
+            return cast(_TResult, other() if isinstance(other, Callable) else other)
 
-        return async_identity(_other)
+        return _then_or_async()
 
 
 @dataclass(slots=True)
