@@ -281,7 +281,9 @@ def safe_async[**_ParamSpec, _TValue](
     func: Callable[_ParamSpec, Awaitable[_TValue | None]],
 ) -> Callable[_ParamSpec, AsyncMaybe[_TValue]]:
     @functools.wraps(func)
-    def _safe(*args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs) -> AsyncMaybe[_TValue]:
+    def _safe(
+        *args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs
+    ) -> AsyncMaybe[_TValue]:
         async def __safe():
             result = await func(*args, **kwargs)
             if result is None:
