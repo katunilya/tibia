@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 from abc import ABC
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, cast
@@ -260,3 +261,34 @@ class Empty(Maybe[Any]): ...
 
 
 _Empty = Empty()
+
+
+def safe[**_ParamSpec, _TValue](
+    func: Callable[_ParamSpec, _TValue | None],
+) -> Callable[_ParamSpec, Maybe[_TValue]]:
+    @functools.wraps(func)
+    def _safe(*args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs) -> Maybe[_TValue]:
+        result = func(*args, **kwargs)
+        if result is None:
+            return Maybe[_TValue].empty()
+
+        return Maybe[_TValue].some(result)
+
+    return _safe  # type: ignore
+
+
+def safe_async[**_ParamSpec, _TValue](
+    func: Callable[_ParamSpec, Awaitable[_TValue | None]],
+) -> Callable[_ParamSpec, AsyncMaybe[_TValue]]:
+    @functools.wraps(func)
+    def _safe(*args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs) -> AsyncMaybe[_TValue]:
+        async def __safe():
+            result = await func(*args, **kwargs)
+            if result is None:
+                return Maybe[_TValue].empty()
+
+            return Maybe[_TValue].some(result)
+
+        return AsyncMaybe(__safe())
+
+    return _safe  # type: ignore
