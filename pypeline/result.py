@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 from abc import ABC
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, cast
@@ -216,3 +217,36 @@ class Ok[_TOk](Result[_TOk, Any]):
 @dataclass(slots=True)
 class Err[_TErr](Result[Any, _TErr]):
     value: _TErr
+
+
+def safe[**_ParamSpec, _TOk](
+    func: Callable[_ParamSpec, _TOk],
+) -> Callable[_ParamSpec, Result[_TOk, Exception]]:
+    @functools.wraps(func)
+    def _safe(
+        *args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs
+    ) -> Result[_TOk, Exception]:
+        try:
+            return Ok(func(*args, **kwargs))
+        except Exception as exc:
+            return Err(exc)
+
+    return _safe  # type: ignore
+
+
+def safe_async[**_ParamSpec, _TOk](
+    func: Callable[_ParamSpec, Awaitable[_TOk]],
+) -> Callable[_ParamSpec, AsyncResult[_TOk, Exception]]:
+    @functools.wraps(func)
+    def _safe(
+        *args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs
+    ) -> AsyncResult[_TOk, Exception]:
+        async def __safe() -> Result[_TOk, Exception]:
+            try:
+                return Ok(await func(*args, **kwargs))
+            except Exception as exc:
+                return Err(exc)
+
+        return AsyncResult(__safe())
+
+    return _safe  # type: ignore
