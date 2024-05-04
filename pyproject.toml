@@ -11,10 +11,56 @@ python = "^3.12"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.0"
+pre-commit = "^3.7.0"
+commitizen = "^3.25.0"
 
 
 [tool.poetry.group.tests.dependencies]
 pytest = "^8.1.1"
+
+
+[tool.commitizen]
+name = "cz_customize"
+
+[tool.commitizen.customize]
+message_template = "{{change_type}}[{{issue_number}}]: {{message}}"
+example = "docs[90]: add new docs."
+schema = "<type>[<issue_number>]: <body>"
+schema_pattern = "(feat|fix|wip|shore)(\\[\\d+\\])?:(\\s.*)"
+change_type_order = ["feat", "fix", "shore"]
+commit_parser = "^(?P<change_type>feat|fix|wip|shore)\\(\\[\\#?P<issue_number>\\]\\):\\s(?P<message>.*)?"
+
+[[tool.commitizen.customize.questions]]
+type = "list"
+name = "change_type"
+message = "Select the type of change you are committing:"
+
+[[tool.commitizen.customize.questions.choices]]
+value = "feat"
+name = "feat: New feature."
+
+[[tool.commitizen.customize.questions.choices]]
+value = "wip"
+name = "wip: Work in progress."
+
+[[tool.commitizen.customize.questions.choices]]
+value = "fix"
+name = "fix: Fix something wrong."
+
+[[tool.commitizen.customize.questions.choices]]
+value = "shore"
+name = "shore: Some changes not affecting functionality."
+
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "issue_number"
+message = "Issue nember:"
+
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "message"
+message = "Body:"
+
 
 [build-system]
 requires = ["poetry-core"]
