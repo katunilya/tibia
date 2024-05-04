@@ -23,10 +23,10 @@ pytest = "^8.1.1"
 name = "cz_customize"
 
 [tool.commitizen.customize]
-message_template = "{{change_type}}[{{issue_number}}]: {{message}}"
+message_template = "{{change_type}}[#{{issue_number}}]: {{message}}"
 example = "docs[90]: add new docs."
 schema = "<type>[<issue_number>]: <body>"
-schema_pattern = "(feat|fix|wip|shore)(\\[\\d+\\])?:(\\s.*)"
+schema_pattern = "(feat|fix|wip|shore)(\\[\\#\\d+\\])?:(\\s.*)"
 change_type_order = ["feat", "fix", "shore"]
 commit_parser = "^(?P<change_type>feat|fix|wip|shore)\\(\\[\\#?P<issue_number>\\]\\):\\s(?P<message>.*)?"
 
