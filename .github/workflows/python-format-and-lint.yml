@@ -1,0 +1,24 @@
+name: Python format and lint
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install poetry
+        uses: snok/install-poetry@v1
+      - name: Install development dependencies
+        run: |
+          poetry install --only dev
+      - name: Check
+        run: |
+          poetry run ruff check
