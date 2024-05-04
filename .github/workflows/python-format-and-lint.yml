@@ -19,7 +19,9 @@ jobs:
       - name: Install development dependencies
         run: |
           poetry install
-      - name: Check
+      - name: Check format and lint
         run: |
           poetry run ruff check
+      - name: Test unit
+        run: |
           poetry run pytest --cov
