@@ -8,8 +8,8 @@ from typing import Awaitable, Callable
 class AsyncPipeline[_TValue]:
     value: Awaitable[_TValue]
 
-    def unwrap(self) -> Awaitable[_TValue]:
-        return self.value
+    async def unwrap(self) -> _TValue:
+        return await self.value
 
     def map[_TResult](
         self, func: Callable[[_TValue], _TResult]
@@ -27,21 +27,13 @@ class AsyncPipeline[_TValue]:
 
         return AsyncPipeline(_map_async(self.value))
 
-    def then[_TResult](
-        self, func: Callable[[_TValue], _TResult]
-    ) -> Awaitable[_TResult]:
-        async def _then(value: Awaitable[_TValue]) -> _TResult:
-            return func(await value)
+    async def then[_TResult](self, func: Callable[[_TValue], _TResult]) -> _TResult:
+        return func(await self.value)
 
-        return _then(self.value)
-
-    def then_async[_TResult](
+    async def then_async[_TResult](
         self, func: Callable[[_TValue], Awaitable[_TResult]]
-    ) -> Awaitable[_TResult]:
-        async def _then_async(value: Awaitable[_TValue]) -> _TResult:
-            return await func(await value)
-
-        return _then_async(self.value)
+    ) -> _TResult:
+        return await func(await self.value)
 
 
 @dataclass(slots=True)
@@ -62,7 +54,7 @@ class Pipeline[_TValue]:
     def then[_TResult](self, func: Callable[[_TValue], _TResult]) -> _TResult:
         return func(self.value)
 
-    def then_async[_TResult](
+    async def then_async[_TResult](
         self, func: Callable[[_TValue], Awaitable[_TResult]]
-    ) -> Awaitable[_TResult]:
-        return func(self.value)
+    ) -> _TResult:
+        return await func(self.value)
