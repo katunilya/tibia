@@ -15,13 +15,13 @@ class AsyncResult[_TOk, _TErr]:
     async def unwrap(self):
         return (await self.value).unwrap()
 
-    async def unwrap_or(self, other: Callable[[], _TOk]):
+    async def unwrap_or(self, other: _TOk | Callable[[], _TOk]):
         return (await self.value).unwrap_or(other)
 
     def unwrap_as_pipeline(self):
         return pipeline.AsyncPipeline(self.unwrap())
 
-    def unwrap_as_pipeline_or(self, other: Callable[[], _TOk]):
+    def unwrap_as_pipeline_or(self, other: _TOk | Callable[[], _TOk]):
         return pipeline.AsyncPipeline(self.unwrap_or(other))
 
     def unwrap_as_maybe(self):
