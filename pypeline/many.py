@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from functools import reduce
 from types import GeneratorType
-from typing import Callable, Iterable
+from typing import Any, Callable, Iterable, cast
 
 from pypeline.pipeline import Pipeline
 
@@ -59,6 +59,26 @@ class Many[_TValue]:
         self, func: Callable[[_TResult, _TValue], _TResult], initial: _TResult
     ):
         return reduce(func, self.value, initial)
+
+    def order_by(
+        self, *, key: Callable[[_TValue], Any] | None = None, reverse: bool = False
+    ):
+        if key is not None:
+            return Many(sorted(self.value, key=key, reverse=reverse))
+
+        return Many(sorted(self.value, reverse=reverse))  # type: ignore
+
+    def order_by_inplace(
+        self, key: Callable[[_TValue], Any] | None = None, reverse: bool = False
+    ):
+        values = cast(list[_TValue], self.compute().unwrap())
+
+        if key:
+            values.sort(key=key, reverse=reverse)
+        else:
+            values.sort(reverse=reverse)  # type: ignore
+
+        return Many(values)
 
     def compute(self):
         if isinstance(self.value, (GeneratorType, map, filter)):
