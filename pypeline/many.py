@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 from functools import reduce
 from types import GeneratorType
-from typing import Callable, Iterable
+from typing import Any, Callable, Hashable, Iterable, Mapping, cast
+
+from pypeline.pairs import Pairs
+from pypeline.pipeline import Pipeline
 
 
 @dataclass(slots=True)
@@ -10,6 +13,14 @@ class Many[_TValue]:
 
     def unwrap(self):
         return self.value
+
+    def unwrap_as_pipeline(self) -> Pipeline[Iterable[_TValue]]:
+        return Pipeline(self.value)
+
+    def unwrap_as_pairs[_TKey: Hashable](
+        self, grouper: Callable[[_TValue], _TKey]
+    ) -> Pairs[_TKey, Iterable[_TValue]]:
+        return Pairs(self.group_by(grouper))
 
     def map[_TResult](self, func: Callable[[_TValue], _TResult]):
         return Many([func(v) for v in self.value])
@@ -54,6 +65,40 @@ class Many[_TValue]:
         self, func: Callable[[_TResult, _TValue], _TResult], initial: _TResult
     ):
         return reduce(func, self.value, initial)
+
+    def group_by[_TKey: Hashable](
+        self, grouper: Callable[[_TValue], _TKey]
+    ) -> Mapping[_TKey, Iterable[_TValue]]:
+        result = dict[_TKey, list[_TValue]]()
+
+        for v in self.value:
+            key = grouper(v)
+            if key not in result:  # pragma: no cover
+                result[key] = []
+
+            result[key].append(v)
+
+        return result
+
+    def order_by(
+        self, *, key: Callable[[_TValue], Any] | None = None, reverse: bool = False
+    ):
+        if key is not None:
+            return Many(sorted(self.value, key=key, reverse=reverse))
+
+        return Many(sorted(self.value, reverse=reverse))  # type: ignore
+
+    def order_by_inplace(
+        self, key: Callable[[_TValue], Any] | None = None, reverse: bool = False
+    ):
+        values = cast(list[_TValue], self.compute().unwrap())
+
+        if key:
+            values.sort(key=key, reverse=reverse)
+        else:
+            values.sort(reverse=reverse)  # type: ignore
+
+        return Many(values)
 
     def compute(self):
         if isinstance(self.value, (GeneratorType, map, filter)):
