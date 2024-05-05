@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 from abc import ABC
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, cast
+from typing import Any, Awaitable, Callable, Type, cast
 
 from pypeline import maybe, pipeline
 
@@ -12,31 +12,16 @@ from pypeline import maybe, pipeline
 class AsyncResult[_TOk, _TErr]:
     value: Awaitable[Result[_TOk, _TErr]]
 
-    @staticmethod
-    def safe[**_ParamSpec](
-        func: Callable[_ParamSpec, Awaitable[_TOk]],
-    ) -> Callable[_ParamSpec, AsyncResult[_TOk, Exception]]:
-        def _safe(*args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs):
-            async def __safe() -> Result[_TOk, Exception]:
-                try:
-                    return Ok(func(*args, **kwargs))
-                except Exception as exc:
-                    return Err(exc)
-
-            return AsyncResult(__safe())
-
-        return _safe
-
     async def unwrap(self):
         return (await self.value).unwrap()
 
-    async def unwrap_or(self, other: Callable[[], _TOk]):
+    async def unwrap_or(self, other: _TOk | Callable[[], _TOk]):
         return (await self.value).unwrap_or(other)
 
     def unwrap_as_pipeline(self):
         return pipeline.AsyncPipeline(self.unwrap())
 
-    def unwrap_as_pipeline_or(self, other: Callable[[], _TOk]):
+    def unwrap_as_pipeline_or(self, other: _TOk | Callable[[], _TOk]):
         return pipeline.AsyncPipeline(self.unwrap_or(other))
 
     def unwrap_as_maybe(self):
@@ -71,60 +56,35 @@ class AsyncResult[_TOk, _TErr]:
 
         return AsyncResult(_map_async())
 
-    def then[_TResult](self, func: Callable[[_TOk], _TResult]) -> Awaitable[_TResult]:
-        async def _then():
-            return (await self.value).then(func)
+    async def then[_TResult](
+        self,
+        func: Callable[[_TOk], _TResult],
+    ) -> _TResult:
+        return (await self.value).then(func)
 
-        return _then()
-
-    def then_async[_TResult](
+    async def then_async[_TResult](
         self, func: Callable[[_TOk], Awaitable[_TResult]]
-    ) -> Awaitable[_TResult]:
-        async def _then_async():
-            return await (await self.value).then_async(func)
+    ) -> _TResult:
+        return await func((await self.value).unwrap())
 
-        return _then_async()
-
-    def then_or[_TResult](
+    async def then_or[_TResult](
         self, func: Callable[[_TOk], _TResult], other: _TResult | Callable[[], _TResult]
-    ) -> Awaitable[_TResult]:
-        async def _then_or():
-            return (await self.value).then_or(func, other)
+    ) -> _TResult:
+        return (await self.value).then_or(func, other)
 
-        return _then_or()
-
-    def then_or_async[_TResult](
+    async def then_or_async[_TResult](
         self,
         func: Callable[[_TOk], Awaitable[_TResult]],
         other: _TResult | Callable[[], _TResult],
-    ) -> Awaitable[_TResult]:
-        async def _then_or_async():
-            return await (await self.value).then_or_async(func, other)
+    ) -> _TResult:
+        result = await self.value
+        if isinstance(result, Ok):
+            return await func(result.value)
 
-        return _then_or_async()
+        return cast(_TResult, other() if isinstance(other, Callable) else other)
 
 
 class Result[_TOk, _TErr](ABC):
-    @staticmethod
-    def ok(value: _TOk) -> Result[_TOk, _TErr]:
-        return Ok(value)
-
-    @staticmethod
-    def err(value: _TErr) -> Result[_TOk, _TErr]:
-        return Err(value)
-
-    @staticmethod
-    def safe[**_ParamSpec](
-        func: Callable[_ParamSpec, _TOk],
-    ) -> Callable[_ParamSpec, Result[_TOk, Exception]]:
-        def _safe(*args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs):
-            try:
-                return Result[_TOk, Exception].ok(func(*args, **kwargs))
-            except Exception as exc:
-                return Result[_TOk, Exception].err(exc)
-
-        return _safe
-
     def is_ok(self):
         return isinstance(self, Ok)
 
@@ -134,7 +94,7 @@ class Result[_TOk, _TErr](ABC):
     def unwrap(self) -> _TOk:
         if not isinstance(self, Ok):
             err_result = cast(Err[_TErr], self)
-            raise ValueError("not ok", err_result.value)
+            raise ValueError("error result", err_result.value)
 
         return self.value
 
@@ -213,17 +173,23 @@ class Result[_TOk, _TErr](ABC):
 class Ok[_TOk](Result[_TOk, Any]):
     value: _TOk
 
+    def as_result[_TErr](self, _: Type[_TErr]) -> Result[_TOk, _TErr]:
+        return cast(Result[_TOk, _TErr], self)
+
 
 @dataclass(slots=True)
 class Err[_TErr](Result[Any, _TErr]):
     value: _TErr
 
+    def as_result[_TOk](self, _: Type[_TOk]) -> Result[_TOk, _TErr]:
+        return cast(Result[_TOk, _TErr], self)
 
-def safe[**_ParamSpec, _TOk](
+
+def result_returns[**_ParamSpec, _TOk](
     func: Callable[_ParamSpec, _TOk],
 ) -> Callable[_ParamSpec, Result[_TOk, Exception]]:
     @functools.wraps(func)
-    def _safe(
+    def _result_returns_async(
         *args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs
     ) -> Result[_TOk, Exception]:
         try:
@@ -231,22 +197,22 @@ def safe[**_ParamSpec, _TOk](
         except Exception as exc:
             return Err(exc)
 
-    return _safe  # type: ignore
+    return _result_returns_async  # type: ignore
 
 
-def safe_async[**_ParamSpec, _TOk](
+def result_returns_async[**_ParamSpec, _TOk](
     func: Callable[_ParamSpec, Awaitable[_TOk]],
 ) -> Callable[_ParamSpec, AsyncResult[_TOk, Exception]]:
     @functools.wraps(func)
-    def _safe(
+    def _result_returns_async(
         *args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs
     ) -> AsyncResult[_TOk, Exception]:
-        async def __safe() -> Result[_TOk, Exception]:
+        async def __result_returns_async() -> Result[_TOk, Exception]:
             try:
                 return Ok(await func(*args, **kwargs))
             except Exception as exc:
                 return Err(exc)
 
-        return AsyncResult(__safe())
+        return AsyncResult(__result_returns_async())
 
-    return _safe  # type: ignore
+    return _result_returns_async  # type: ignore

@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 from abc import ABC
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, cast
+from typing import Any, Awaitable, Callable, Type, cast
 
 from pypeline import pipeline, result
 
@@ -11,22 +11,6 @@ from pypeline import pipeline, result
 @dataclass(slots=True)
 class AsyncMaybe[_TValue](ABC):
     value: Awaitable[Maybe[_TValue]]
-
-    @staticmethod
-    def safe[**_ParamSpec](
-        func: Callable[_ParamSpec, Awaitable[_TValue | None]],
-    ) -> Callable[_ParamSpec, AsyncMaybe[_TValue]]:
-        def _safe(*args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs):
-            async def __safe():
-                result = await func(*args, **kwargs)
-                if result is None:
-                    return Maybe[_TValue].empty()
-
-                return Maybe[_TValue].some(result)
-
-            return AsyncMaybe[_TValue](__safe())
-
-        return _safe
 
     async def unwrap(self):
         return (await self.value).unwrap()
@@ -83,63 +67,30 @@ class AsyncMaybe[_TValue](ABC):
         async def _map_async():
             maybe = await self.value
             if isinstance(maybe, Some):
-                return Maybe[_TResult].some(await func(maybe.value))
+                return Some(await func(maybe.unwrap()))
 
-            raise ValueError("is empty")
+            return cast(Maybe[_TResult], maybe)
 
         return AsyncMaybe(_map_async())
 
-    def then_async[_TResult](
+    async def then_async[_TResult](
         self, func: Callable[[_TValue], Awaitable[_TResult]]
-    ) -> Awaitable[_TResult]:
-        async def _then_async():
-            return await func((await self.value).unwrap())
+    ) -> _TResult:
+        return await func((await self.value).unwrap())
 
-        return _then_async()
-
-    def then_or_async[_TResult](
+    async def then_or_async[_TResult](
         self,
         func: Callable[[_TValue], Awaitable[_TResult]],
         other: _TResult | Callable[[], _TResult],
-    ) -> Awaitable[_TResult]:
-        async def _then_or_async():
-            maybe = await self.value
-            if isinstance(maybe, Some):
-                return await func(maybe.value)
-
+    ) -> _TResult:
+        maybe = await self.value
+        if not isinstance(maybe, Some):
             return cast(_TResult, other() if isinstance(other, Callable) else other)
 
-        return _then_or_async()
+        return await func(maybe.value)
 
 
 class Maybe[_TValue](ABC):
-    @staticmethod
-    def some(value: _TValue) -> Maybe[_TValue]:
-        return Some(value)
-
-    @staticmethod
-    def empty() -> Maybe[_TValue]:
-        return Empty()
-
-    @staticmethod
-    def from_optional(value: _TValue | None) -> Maybe[_TValue]:
-        if value is None:
-            return _Empty
-
-        return Some(value)
-
-    @staticmethod
-    def safe[**_ParamSpec](
-        func: Callable[_ParamSpec, _TValue | None],
-    ) -> Callable[_ParamSpec, Maybe[_TValue]]:
-        def _safe(*args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs):
-            if (res := func(*args, **kwargs)) is None:
-                return Maybe[_TValue].empty()
-
-            return Maybe[_TValue].some(res)
-
-        return _safe
-
     def is_some(self) -> bool:
         return isinstance(self, Some)
 
@@ -148,7 +99,7 @@ class Maybe[_TValue](ABC):
 
     def unwrap(self) -> _TValue:
         if not isinstance(self, Some):
-            raise ValueError("is empty")
+            raise ValueError("empty")
 
         return self.value
 
@@ -166,21 +117,20 @@ class Maybe[_TValue](ABC):
 
     def unwrap_as_result(self) -> result.Result[_TValue, Exception]:
         if not isinstance(self, Some):
-            return result.Result[_TValue, Exception].err(ValueError("is empty"))
+            return result.Err(ValueError("empty"))
 
-        return result.Result[_TValue, Exception].ok(self.value)
+        return result.Ok(self.value)
 
     def unwrap_as_result_or(self, other: _TValue | Callable[[], _TValue]):
         if not isinstance(self, Some):
-            return result.Result[_TValue, Exception].ok(
-                cast(_TValue, other() if isinstance(other, Callable) else other)
-            )
+            _other = cast(_TValue, other() if isinstance(other, Callable) else other)
+            return result.Ok(_other).as_result(Exception)
 
-        return result.Result[_TValue, Exception].ok(self.value)
+        return result.Ok(self.value).as_result(Exception)
 
     def unwrap_as_pipeline(self):
         if not isinstance(self, Some):
-            raise ValueError("is empty")
+            raise ValueError("empty")
 
         return pipeline.Pipeline(self.value)
 
@@ -199,10 +149,10 @@ class Maybe[_TValue](ABC):
         return pipeline.Pipeline(_value)
 
     def map[_TResult](self, func: Callable[[_TValue], _TResult]):
-        if isinstance(self, Some):
-            return Maybe[_TResult].some(func(self.value))
+        if not isinstance(self, Some):
+            return cast(Maybe[_TResult], self)
 
-        return cast(Maybe[_TResult], self)
+        return Some(func(self.value)).as_maybe()
 
     def then[_TResult](self, func: Callable[[_TValue], _TResult]):
         return func(self.unwrap())
@@ -219,78 +169,85 @@ class Maybe[_TValue](ABC):
 
     def map_async[_TResult](self, func: Callable[[_TValue], Awaitable[_TResult]]):
         async def _map_async():
-            if isinstance(self, Some):
-                return Maybe[_TResult].some(await func(self.value))
+            if not isinstance(self, Some):
+                return cast(Maybe[_TResult], self)
 
-            return cast(Maybe[_TResult], self)
+            return Some(await func(self.value)).as_maybe()
 
         return AsyncMaybe(_map_async())
 
-    def then_async[_TResult](
+    async def then_async[_TResult](
         self, func: Callable[[_TValue], Awaitable[_TResult]]
-    ) -> Awaitable[_TResult]:
-        async def _then_async():
-            if isinstance(self, Some):
-                return await func(self.value)
+    ) -> _TResult:
+        if isinstance(self, Some):
+            return await func(self.value)
 
-            raise ValueError("is empty")
+        raise ValueError("empty")
 
-        return _then_async()
-
-    def then_or_async[_TResult](
+    async def then_or_async[_TResult](
         self,
         func: Callable[[_TValue], Awaitable[_TResult]],
         other: _TResult | Callable[[], _TResult],
-    ) -> Awaitable[_TResult]:
-        async def _then_or_async():
-            if isinstance(self, Some):
-                return await func(self.value)
+    ) -> _TResult:
+        if isinstance(self, Some):
+            return await func(self.value)
 
-            return cast(_TResult, other() if isinstance(other, Callable) else other)
-
-        return _then_or_async()
+        return cast(_TResult, other() if isinstance(other, Callable) else other)
 
 
 @dataclass(slots=True)
 class Some[_TValue](Maybe[_TValue]):
     value: _TValue
 
+    def as_maybe(self) -> Maybe[_TValue]:
+        return self
+
 
 @dataclass(slots=True)
-class Empty(Maybe[Any]): ...
+class Empty(Maybe[Any]):
+    def as_maybe[_TValue](self, _: Type[_TValue]) -> Maybe[_TValue]:
+        return self
 
 
 _Empty = Empty()
 
 
-def safe[**_ParamSpec, _TValue](
+def maybe_returns[**_ParamSpec, _TValue](
     func: Callable[_ParamSpec, _TValue | None],
 ) -> Callable[_ParamSpec, Maybe[_TValue]]:
     @functools.wraps(func)
-    def _safe(*args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs) -> Maybe[_TValue]:
+    def _maybe_returns(
+        *args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs
+    ) -> Maybe[_TValue]:
         result = func(*args, **kwargs)
         if result is None:
-            return Maybe[_TValue].empty()
+            return _Empty
 
-        return Maybe[_TValue].some(result)
+        return Some(result)
 
-    return _safe  # type: ignore
+    return _maybe_returns  # type: ignore
 
 
-def safe_async[**_ParamSpec, _TValue](
+def maybe_returns_async[**_ParamSpec, _TValue](
     func: Callable[_ParamSpec, Awaitable[_TValue | None]],
 ) -> Callable[_ParamSpec, AsyncMaybe[_TValue]]:
     @functools.wraps(func)
-    def _safe(
+    def _maybe_returns_async(
         *args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs
     ) -> AsyncMaybe[_TValue]:
-        async def __safe():
+        async def __maybe_returns_async():
             result = await func(*args, **kwargs)
             if result is None:
-                return Maybe[_TValue].empty()
+                return _Empty
 
-            return Maybe[_TValue].some(result)
+            return Some(result)
 
-        return AsyncMaybe(__safe())
+        return AsyncMaybe(__maybe_returns_async())
 
-    return _safe  # type: ignore
+    return _maybe_returns_async  # type: ignore
+
+
+def maybe_from_optional[_TValue](value: _TValue | None) -> Maybe[_TValue]:
+    if value is None:
+        return _Empty
+    return Some(value)
