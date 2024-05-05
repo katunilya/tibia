@@ -14,14 +14,14 @@ class Pairs[_TKey: Hashable, _TValue]:
     def values(self) -> Iterable[_TValue]:
         return list(self.value.values())
 
-    def lazy_values(self) -> Iterable[_TValue]:
+    def values_lazy(self) -> Iterable[_TValue]:
         for v in self.value.values():
             yield v
 
     def keys(self) -> Iterable[_TKey]:
         return list(self.value.keys())
 
-    def lazy_keys(self) -> Iterable[_TKey]:
+    def keys_lazy(self) -> Iterable[_TKey]:
         for k in self.value.keys():
             yield k
 
@@ -40,6 +40,6 @@ class Pairs[_TKey: Hashable, _TValue]:
     def as_iterable(self) -> Iterable[tuple[_TKey, _TValue]]:
         return [(k, v) for k, v in self.value.items()]
 
-    def as_lazy_iterable(self) -> Iterable[tuple[_TKey, _TValue]]:
+    def as_iterable_lazy(self) -> Iterable[tuple[_TKey, _TValue]]:
         for k, v in self.value.items():
             yield (k, v)
