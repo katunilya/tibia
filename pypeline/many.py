@@ -3,6 +3,8 @@ from functools import reduce
 from types import GeneratorType
 from typing import Callable, Iterable
 
+from pypeline.pipeline import Pipeline
+
 
 @dataclass(slots=True)
 class Many[_TValue]:
@@ -10,6 +12,9 @@ class Many[_TValue]:
 
     def unwrap(self):
         return self.value
+
+    def unwrap_as_pipeline(self) -> Pipeline[Iterable[_TValue]]:
+        return Pipeline(self.value)
 
     def map[_TResult](self, func: Callable[[_TValue], _TResult]):
         return Many([func(v) for v in self.value])

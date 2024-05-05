@@ -4,6 +4,7 @@ from typing import Any, Callable, Generator, cast
 import pytest
 
 from pypeline.many import Many
+from pypeline.pipeline import Pipeline
 
 
 @pytest.fixture
@@ -26,6 +27,20 @@ def test_unwrap(
 ):
     assert isinstance(Many(finite_generator()).unwrap(), GeneratorType)
     assert isinstance(Many(int_list).unwrap(), list)
+
+
+def test_unwrap_as_pipeline(
+    finite_generator: Callable[[], Generator[int, Any, None]],
+    int_list: list[int],
+):
+    g = finite_generator()
+    p = Many(g).unwrap_as_pipeline()
+    assert isinstance(p, Pipeline)
+    assert p.unwrap() == g
+
+    p = Many(int_list).unwrap_as_pipeline()
+    assert isinstance(p, Pipeline)
+    assert p.unwrap() == int_list
 
 
 def test_map(
