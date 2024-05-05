@@ -5,6 +5,7 @@ from typing import Any, Callable, Generator, cast
 import pytest
 
 from pypeline.many import Many
+from pypeline.pairs import Pairs
 from pypeline.pipeline import Pipeline
 
 
@@ -56,6 +57,19 @@ def test_unwrap_as_pipeline(
     p = Many(int_list).unwrap_as_pipeline()
     assert isinstance(p, Pipeline)
     assert p.unwrap() == int_list
+
+
+def test_unwrap_as_pairs(
+    finite_generator: Callable[[], Generator[int, Any, None]],
+    int_list: list[int],
+):
+    p = Many(finite_generator()).unwrap_as_pairs(lambda x: -x)
+    assert isinstance(p, Pairs)
+    assert all([isinstance(v, list) for v in p.values()])
+
+    p = Many(int_list).unwrap_as_pairs(lambda x: -x)
+    assert isinstance(p, Pairs)
+    assert all([isinstance(v, list) for v in p.values()])
 
 
 def test_map(
