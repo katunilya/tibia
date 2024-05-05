@@ -23,14 +23,14 @@ def set_admin_status(user: dict[str, Any]) -> dict[str, Any]:
 # invoke function with data
 user_1 = set_admin_status(
     {
-        'name': 'John Doe', 
+        'name': 'John Doe',
         'role': 'member'
     }
 )
 
 # apply function to data
 user_2 = Pipeline({
-        'name': 'John Doe', 
+        'name': 'John Doe',
         'role': 'member'
     }).then(set_admin_status)
 ```
@@ -142,3 +142,28 @@ class UpdateUser:
 ```
 
 With this approach we do not have any doubts on what action we actually want to perform.
+
+## Development Quick Start Guide
+
+In order to use `Makefile` scripts one would need:
+- `pyenv`
+- `python>=3.12` (installed via `pyenv`)
+- `poetry>=1.2`
+
+Clone repository and run:
+
+```shell
+make setup
+```
+
+With this command python3.12 will be chosen as local python, new python virtual
+environment would be created via `poetry` and dependencies will be install via `poetry`
+and also `pre-commit` hooks will be installed.
+
+Other commands in `Makefile` are pretty self-explanatory.
+
+To make a commit use `commitizen`:
+
+```shell
+cz c
+```
