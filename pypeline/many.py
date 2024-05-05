@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from functools import reduce
 from types import GeneratorType
-from typing import Any, Callable, Hashable, Iterable, cast
+from typing import Any, Callable, Hashable, Iterable, Mapping, cast
 
 from pypeline.pairs import Pairs
 from pypeline.pipeline import Pipeline
@@ -20,16 +20,7 @@ class Many[_TValue]:
     def unwrap_as_pairs[_TKey: Hashable](
         self, grouper: Callable[[_TValue], _TKey]
     ) -> Pairs[_TKey, Iterable[_TValue]]:
-        result = dict[_TKey, list[_TValue]]()
-
-        for v in self.value:
-            key = grouper(v)
-            if key not in result:  # pragma: no cover
-                result[key] = []
-
-            result[key].append(v)
-
-        return Pairs(result)
+        return Pairs(self.group_by(grouper))
 
     def map[_TResult](self, func: Callable[[_TValue], _TResult]):
         return Many([func(v) for v in self.value])
@@ -74,6 +65,20 @@ class Many[_TValue]:
         self, func: Callable[[_TResult, _TValue], _TResult], initial: _TResult
     ):
         return reduce(func, self.value, initial)
+
+    def group_by[_TKey: Hashable](
+        self, grouper: Callable[[_TValue], _TKey]
+    ) -> Mapping[_TKey, Iterable[_TValue]]:
+        result = dict[_TKey, list[_TValue]]()
+
+        for v in self.value:
+            key = grouper(v)
+            if key not in result:  # pragma: no cover
+                result[key] = []
+
+            result[key].append(v)
+
+        return result
 
     def order_by(
         self, *, key: Callable[[_TValue], Any] | None = None, reverse: bool = False
