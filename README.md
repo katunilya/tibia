@@ -143,14 +143,51 @@ class UpdateUser:
 
 With this approach we do not have any doubts on what action we actually want to perform.
 
-## Development Quick Start Guide
+## Development Guide
+
+### Starting Development
 
 In order to use `Makefile` scripts one would need:
+
 - `pyenv`
 - `python>=3.12` (installed via `pyenv`)
 - `poetry>=1.2`
 
-Clone repository and run:
+Clone repository
+
+<!-- markdownlint-disable MD033 -->
+<!-- markdownlint-disable MD046 -->
+<details>
+    <summary>
+        HTTPS
+    </summary>
+
+    ```sh
+    git clone https://github.com/katunilya/pypeline.git
+    ```
+</details>
+
+<details>
+    <summary>
+        SSH
+    </summary>
+
+    ```sh
+    git clone git@github.com:katunilya/pypeline.git
+    ```
+</details>
+
+<details>
+    <summary>
+        GitHub CLI
+    </summary>
+
+    ```sh
+    gh repo clone katunilya/pypeline
+    ```
+</details>
+
+Then run:
 
 ```shell
 make setup
@@ -162,8 +199,47 @@ and also `pre-commit` hooks will be installed.
 
 Other commands in `Makefile` are pretty self-explanatory.
 
+### Making And Developing Issue
+
+Using web UI or GitHub CLI create new Issue in repository. If Issue title
+provides clean information about changes one can leave it as is, but we
+encourage providing details in Issue body.
+
+In order to start developing new issue create branch with the following naming
+convention:
+
+```txt
+<issue-number>-<title>
+```
+
+As example: `101-how-to-start`
+
+### Making Commit
+
 To make a commit use `commitizen`:
 
 ```shell
 cz c
 ```
+
+This would invoke a set of prompts that one should follow in order to make
+correct conventional commits.
+
+### Preparing Release
+
+When new release is coming firstly observe changes that are going to become a
+part of this release in order to understand what SemVer should be provided. Than
+create Issue on preparing release with title `Release v<X>.<Y>.<Z>` and develop
+it as any other issue.
+
+Developing release Issue might include some additions to documentation and
+anything that does not change code base crucially (better not changes in code).
+Only **required** thing to do in release Issue is change version of project in
+`pyproject.toml` via `poetry`:
+
+```sh
+poetry version <SemVer>
+```
+
+When release branch is merged to `main` new release tag and GitHub release are
+made (via web UI or GitHub CLI).
