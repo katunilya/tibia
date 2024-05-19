@@ -1,3 +1,5 @@
+from typing import cast
+
 import pytest
 
 from pypeline.maybe import Maybe
@@ -152,3 +154,26 @@ def test_result_returns():
 
     assert isinstance(_error_returns(True), Err)
     assert isinstance(_error_returns(False), Ok)
+
+
+def test_otherwise():
+    _err = Err(0).as_result(str).otherwise(add(1))
+    assert isinstance(_err, Err)
+    assert _err.value == 1
+
+    _ok = Ok(0).as_result(int).otherwise(add(1))
+
+    assert isinstance(_ok, Ok)
+    assert cast(Ok[int], _ok).value == 0
+
+
+@pytest.mark.asyncio
+async def test_otherwise_async():
+    _err = await (Err(0).as_result(str).otherwise_async(add_async(1))).value
+    assert isinstance(_err, Err)
+    assert _err.value == 1
+
+    _ok = await (Ok(0).as_result(int).otherwise_async(add_async(1))).value
+
+    assert isinstance(_ok, Ok)
+    assert cast(Ok[int], _ok).value == 0
