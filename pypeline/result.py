@@ -246,7 +246,7 @@ class Result[_TOk, _TErr](ABC):
 class Ok[_TOk](Result[_TOk, Any]):
     value: _TOk
 
-    def as_result[_TErr](self, _: Type[_TErr]) -> Result[_TOk, _TErr]:
+    def with_err[_TErr](self, _: Type[_TErr]) -> Result[_TOk, _TErr]:
         return cast(Result[_TOk, _TErr], self)
 
 
@@ -254,7 +254,7 @@ class Ok[_TOk](Result[_TOk, Any]):
 class Err[_TErr](Result[Any, _TErr]):
     value: _TErr
 
-    def as_result[_TOk](self, _: Type[_TOk]) -> Result[_TOk, _TErr]:
+    def with_ok[_TOk](self, _: Type[_TOk]) -> Result[_TOk, _TErr]:
         return cast(Result[_TOk, _TErr], self)
 
 

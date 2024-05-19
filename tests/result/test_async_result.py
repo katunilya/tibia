@@ -7,11 +7,11 @@ from tests.example_functions import add, add_async, can_raise_exception_async, s
 
 
 async def ok_int_async(value: int):
-    return Ok(value).as_result(Exception)
+    return Ok(value).with_err(Exception)
 
 
 async def err_exc_async(exc: Exception = Exception()):
-    return Err(exc).as_result(int)
+    return Err(exc).with_ok(int)
 
 
 @pytest.mark.asyncio
