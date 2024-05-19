@@ -1,7 +1,7 @@
 import pytest
 
 from pypeline.pipeline import Pipeline
-from pypeline.pointfree.casting import as_type, as_type_maybe
+from pypeline.pointfree.casting import as_type, as_type_maybe, as_type_result
 
 
 class User: ...
@@ -22,3 +22,8 @@ def test_as_type():
 def test_as_type_maybe():
     assert Pipeline(Admin()).then(as_type_maybe(User)).is_some()
     assert Pipeline(User()).then(as_type_maybe(Admin)).is_empty()
+
+
+def test_as_type_result():
+    assert Pipeline(Admin()).then(as_type_result(User)).is_ok()
+    assert Pipeline(User()).then(as_type_result(Admin)).is_err()
