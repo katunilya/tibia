@@ -1,3 +1,5 @@
+from typing import Any
+
 from pypeline.utils import curry_first
 
 
@@ -67,3 +69,7 @@ async def can_raise_exception_async(do: bool):
         raise Exception()
 
     return int(0)
+
+
+async def str_async(value: Any):
+    return str(value)

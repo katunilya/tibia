@@ -3,7 +3,7 @@ import pytest
 from pypeline.maybe import AsyncMaybe
 from pypeline.pipeline import AsyncPipeline
 from pypeline.result import AsyncResult, Err, Ok, result_returns_async
-from tests.example_functions import add, add_async, can_raise_exception_async
+from tests.example_functions import add, add_async, can_raise_exception_async, str_async
 
 
 async def ok_int_async(value: int):
@@ -175,3 +175,62 @@ async def test_result_returns_async():
     _ok = _error_returns(False)
     assert isinstance(_ok, AsyncResult)
     assert await _ok.unwrap() == 0
+
+
+@pytest.mark.asyncio
+async def test_otherwise():
+    _err = await AsyncResult(err_exc_async()).otherwise(str).value
+
+    assert isinstance(_err, Err)
+    assert isinstance(_err.value, str)
+    assert _err.value == str(Exception())
+
+    _ok = await AsyncResult(ok_int_async(0)).otherwise(str).value
+
+    assert isinstance(_ok, Ok)
+    assert isinstance(_ok.value, int)
+    assert _ok.value == 0
+
+
+@pytest.mark.asyncio
+async def test_otherwise_async():
+    _err = await AsyncResult(err_exc_async()).otherwise_async(str_async).value
+
+    assert isinstance(_err, Err)
+    assert isinstance(_err.value, str)
+    assert _err.value == str(Exception())
+
+    _ok = await AsyncResult(ok_int_async(0)).otherwise_async(str_async).value
+
+    assert isinstance(_ok, Ok)
+    assert isinstance(_ok.value, int)
+    assert _ok.value == 0
+
+
+@pytest.mark.asyncio
+async def test_recover():
+    other = ""
+
+    _result = await AsyncResult(err_exc_async()).recover(other).value
+
+    assert isinstance(_result, Ok)
+    assert isinstance(_result.value, str)
+    assert _result.value == other
+
+    _result = await AsyncResult(err_exc_async()).recover(lambda: "f").value
+
+    assert isinstance(_result, Ok)
+    assert isinstance(_result.value, str)
+    assert _result.value == "f"
+
+    _result = await AsyncResult(ok_int_async(0)).recover(-1).value
+
+    assert isinstance(_result, Ok)
+    assert isinstance(_result.value, int)
+    assert _result.value == 0
+
+    _result = await AsyncResult(ok_int_async(0)).recover(lambda: -1).value
+
+    assert isinstance(_result, Ok)
+    assert isinstance(_result.value, int)
+    assert _result.value == 0

@@ -83,6 +83,40 @@ class AsyncResult[_TOk, _TErr]:
 
         return cast(_TResult, other() if isinstance(other, Callable) else other)
 
+    def otherwise[_TNewErr](
+        self, func: Callable[[_TErr], _TNewErr]
+    ) -> AsyncResult[_TOk, _TNewErr]:
+        async def _otherwise():
+            _result = await self.value
+
+            if isinstance(_result, Err):
+                _err = cast(Err[_TErr], _result)
+                return Err(func(_err.value))
+
+            return _result
+
+        return AsyncResult(_otherwise())
+
+    def otherwise_async[_TNewErr](
+        self, func: Callable[[_TErr], Awaitable[_TNewErr]]
+    ) -> AsyncResult[_TOk, _TNewErr]:
+        async def _otherwise_async():
+            _result = await self.value
+
+            if isinstance(_result, Err):
+                _err = cast(Err[_TErr], _result)
+                return Err(await func(_err.value))
+
+            return _result
+
+        return AsyncResult(_otherwise_async())
+
+    def recover(self, other: _TOk | Callable[[], _TOk]) -> AsyncResult[_TOk, _TErr]:
+        async def _recover():
+            return (await self.value).recover(other)
+
+        return AsyncResult(_recover())
+
 
 class Result[_TOk, _TErr](ABC):
     def is_ok(self):
@@ -167,6 +201,33 @@ class Result[_TOk, _TErr](ABC):
             return cast(_TResult, other() if isinstance(other, Callable) else other)
 
         return _then_or_async()
+
+    def otherwise[_TNewErr](
+        self, func: Callable[[_TErr], _TNewErr]
+    ) -> Result[_TOk, _TNewErr]:
+        if isinstance(self, Err):
+            _err = cast(Err[_TErr], self)
+            return Err(func(_err.value))
+
+        return self
+
+    def otherwise_async[_TNewErr](
+        self, func: Callable[[_TErr], Awaitable[_TNewErr]]
+    ) -> AsyncResult[_TOk, _TNewErr]:
+        async def _otherwise_async() -> Result[_TOk, _TNewErr]:
+            if isinstance(self, Err):
+                _err = cast(Err[_TErr], self)
+                return Err(await func(_err.value))
+
+            return self
+
+        return AsyncResult(_otherwise_async())
+
+    def recover(self, other: _TOk | Callable[[], _TOk]) -> Result[_TOk, _TErr]:
+        if isinstance(self, Err):
+            return Ok(other() if isinstance(other, Callable) else other)
+
+        return self
 
 
 @dataclass(slots=True)
