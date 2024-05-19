@@ -119,6 +119,12 @@ class AsyncResult[_TOk, _TErr]:
 
 
 class Result[_TOk, _TErr](ABC):
+    def as_err(self) -> Err[_TErr]:
+        if not isinstance(self, Err):
+            raise ValueError("cannot cast to Err")
+
+        return self
+
     def is_ok(self):
         return isinstance(self, Ok)
 
@@ -289,3 +295,7 @@ def result_is_ok(result: Result[Any, Any]) -> bool:
 
 def result_is_err(result: Result[Any, Any]) -> bool:
     return result.is_err()
+
+
+def result_as_err[_TErr](result: Result[Any, _TErr]) -> Err[_TErr]:
+    return result.as_err()
