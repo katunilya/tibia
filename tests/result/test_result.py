@@ -9,6 +9,7 @@ from pypeline.result import (
     Err,
     Ok,
     result_as_err,
+    result_as_ok,
     result_is_err,
     result_is_ok,
     result_returns,
@@ -248,3 +249,14 @@ def test_result_as_err():
 
     with pytest.raises(ValueError):
         _ok.as_err()
+
+
+def test_result_as_ok():
+    _ok = Ok(0).as_result(str)
+    _err = Err(0).as_result(str)
+
+    assert isinstance(result_as_ok(_ok), Ok)
+    assert result_as_ok(_ok) == _ok.as_ok()
+
+    with pytest.raises(ValueError):
+        _err.as_ok()
