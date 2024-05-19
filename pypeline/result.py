@@ -281,3 +281,7 @@ def result_returns_async[**_ParamSpec, _TOk](
 
 def result_unwrap[_TOk](result: Result[_TOk, Any]) -> _TOk:
     return result.unwrap()
+
+
+def result_is_ok(result: Result[Any, Any]) -> bool:
+    return result.is_ok()

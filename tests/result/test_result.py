@@ -4,7 +4,14 @@ import pytest
 
 from pypeline.maybe import Maybe
 from pypeline.pipeline import Pipeline
-from pypeline.result import AsyncResult, Err, Ok, result_returns, result_unwrap
+from pypeline.result import (
+    AsyncResult,
+    Err,
+    Ok,
+    result_is_ok,
+    result_returns,
+    result_unwrap,
+)
 from tests.example_functions import add, add_async, can_raise_exception
 
 
@@ -212,3 +219,11 @@ def test_result_unwrap():
 
     with pytest.raises(ValueError):
         result_unwrap(Err("").as_result(str))
+
+
+def test_result_is_ok():
+    result = Ok(0).as_result(str)
+    assert result.is_ok() == result_is_ok(result)
+
+    result = Err(0).as_result(str)
+    assert result.is_ok() == result_is_ok(result)
