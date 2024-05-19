@@ -111,6 +111,12 @@ class AsyncResult[_TOk, _TErr]:
 
         return AsyncResult(_otherwise_async())
 
+    def recover(self, other: _TOk | Callable[[], _TOk]) -> AsyncResult[_TOk, _TErr]:
+        async def _recover():
+            return (await self.value).recover(other)
+
+        return AsyncResult(_recover())
+
 
 class Result[_TOk, _TErr](ABC):
     def is_ok(self):
@@ -216,6 +222,12 @@ class Result[_TOk, _TErr](ABC):
             return self
 
         return AsyncResult(_otherwise_async())
+
+    def recover(self, other: _TOk | Callable[[], _TOk]) -> Result[_TOk, _TErr]:
+        if isinstance(self, Err):
+            return Ok(other() if isinstance(other, Callable) else other)
+
+        return self
 
 
 @dataclass(slots=True)
