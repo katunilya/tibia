@@ -2,7 +2,15 @@ from typing import Any
 
 import pytest
 
-from pypeline.maybe import Empty, Some, maybe_from_optional, maybe_returns, maybe_unwrap
+from pypeline.maybe import (
+    Empty,
+    Maybe,
+    Some,
+    maybe_from_optional,
+    maybe_is_some,
+    maybe_returns,
+    maybe_unwrap,
+)
 from pypeline.pipeline import Pipeline
 from pypeline.result import Err, Ok
 from tests.example_functions import (
@@ -198,3 +206,8 @@ def test_maybe_unwrap():
 
     with pytest.raises(ValueError):
         maybe_unwrap(Empty().as_maybe(int))
+
+
+@pytest.mark.parametrize("m, result", [(Some(0), True), (Empty(), False)])
+def test_maybe_is_some(m: Maybe[Any], result: bool):
+    assert maybe_is_some(m) == m.is_some() == result
