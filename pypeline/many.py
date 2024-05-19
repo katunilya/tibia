@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from functools import reduce
 from types import GeneratorType
-from typing import Any, Callable, Hashable, Iterable, Mapping, cast
+from typing import Any, Callable, Hashable, Iterable, cast
 
 from pypeline.pairs import Pairs
 from pypeline.pipeline import Pipeline
@@ -17,58 +17,62 @@ class Many[_TValue]:
     def unwrap_as_pipeline(self) -> Pipeline[Iterable[_TValue]]:
         return Pipeline(self.value)
 
-    def unwrap_as_pairs[_TKey: Hashable](
-        self, grouper: Callable[[_TValue], _TKey]
-    ) -> Pairs[_TKey, Iterable[_TValue]]:
-        return Pairs(self.group_by(grouper))
+    def unwrap_as_pairs[_TKey: Hashable, _TNewValue](
+        self, func: Callable[[_TValue], tuple[_TKey, _TNewValue]]
+    ) -> Pairs[_TKey, _TNewValue]:
+        result = {}
 
-    def map[_TResult](self, func: Callable[[_TValue], _TResult]):
+        for v in self.value:
+            _key, _value = func(v)
+            result[_key] = _value
+
+        return Pairs(result)
+
+    def map_values[_TResult](self, func: Callable[[_TValue], _TResult]):
         return Many([func(v) for v in self.value])
 
-    def map_lazy[_TResult](self, func: Callable[[_TValue], _TResult]):
+    def map_values_lazy[_TResult](self, func: Callable[[_TValue], _TResult]):
         return Many((func(v) for v in self.value))
 
-    def skip(self, num: int):
+    def skip_values(self, num: int):
         if num < 0:
             raise ValueError(f"cannot skip {num} values")
 
         return Many([v for i, v in enumerate(self.value) if i >= num])
 
-    def skip_lazy(self, num: int):
+    def skip_values_lazy(self, num: int):
         if num < 0:
             raise ValueError(f"cannot skip {num} values")
 
         return Many((v for i, v in enumerate(self.value) if i >= num))
 
-    def take(self, num: int):
+    def take_values(self, num: int):
         if num < 0:
             raise ValueError(f"cannot take {num} values")
 
         return Many([v for i, v in enumerate(self.value) if i < num])
 
-    def take_lazy(self, num: int):
+    def take_values_lazy(self, num: int):
         if num < 0:
             raise ValueError(f"cannot take {num} values")
 
         return Many((v for i, v in enumerate(self.value) if i < num))
 
-    def filter(self, func: Callable[[_TValue], bool]):
+    def filter_values(self, func: Callable[[_TValue], bool]):
         return Many([v for v in self.value if func(v)])
 
-    def filter_lazy(self, func: Callable[[_TValue], bool]):
+    def filter_values_lazy(self, func: Callable[[_TValue], bool]):
         return Many((v for v in self.value if func(v)))
 
-    def reduce(self, func: Callable[[_TValue, _TValue], _TValue]):
+    def reduce_values(self, func: Callable[[_TValue, _TValue], _TValue]):
         return reduce(func, self.value)
 
-    def reduce_to[_TResult](
+    def reduce_values_to[_TResult](
         self, func: Callable[[_TResult, _TValue], _TResult], initial: _TResult
     ):
         return reduce(func, self.value, initial)
 
-    def group_by[_TKey: Hashable](
-        self, grouper: Callable[[_TValue], _TKey]
-    ) -> Mapping[_TKey, Iterable[_TValue]]:
+    def group_values_by[_TKey: Hashable](self, grouper: Callable[[_TValue], _TKey]):
         result = dict[_TKey, list[_TValue]]()
 
         for v in self.value:
@@ -78,9 +82,9 @@ class Many[_TValue]:
 
             result[key].append(v)
 
-        return result
+        return Pairs(result)
 
-    def order_by(
+    def order_values_by(
         self, *, key: Callable[[_TValue], Any] | None = None, reverse: bool = False
     ):
         if key is not None:
@@ -88,10 +92,10 @@ class Many[_TValue]:
 
         return Many(sorted(self.value, reverse=reverse))  # type: ignore
 
-    def order_by_inplace(
+    def order_values_by_inplace(
         self, key: Callable[[_TValue], Any] | None = None, reverse: bool = False
     ):
-        values = cast(list[_TValue], self.compute().unwrap())
+        values = cast(list[_TValue], self.compute_values().unwrap())
 
         if key:
             values.sort(key=key, reverse=reverse)
@@ -100,8 +104,18 @@ class Many[_TValue]:
 
         return Many(values)
 
-    def compute(self):
+    def compute_values(self):
         if isinstance(self.value, (GeneratorType, map, filter)):
             return Many([v for v in self.value])  # type: ignore
 
         return Many(self.value)
+
+    def map[_TNewValue](
+        self, func: Callable[[Iterable[_TValue]], Iterable[_TNewValue]]
+    ):
+        return Many(func(self.value))
+
+    def then[_TNewValue](
+        self, func: Callable[[Iterable[_TValue]], Iterable[_TNewValue]]
+    ):
+        return func(self.value)
