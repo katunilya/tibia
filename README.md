@@ -143,6 +143,131 @@ class UpdateUser:
 
 With this approach we do not have any doubts on what action we actually want to perform.
 
+Simple example of working with `Maybe`:
+
+```py
+value = ( # type of str
+    Some(3)
+    .as_maybe()  # as_maybe performs upper-cast to Maybe[T]
+    .map(lambda x: str(x))  # Maybe[int] -> int -> func -> str -> Maybe[str]
+    .then_or(lambda x: x * 3, '')  # Maybe[str] -> str -> func -> str
+)
+```
+
+## `Result` & `AsyncResult`
+
+Python exception handling lacks one very important feature - it is hard to
+oversee whether some function raises Exception or not. In order to make
+exception more reliable and predictable we can return Exceptions or any other
+error states.
+
+It can be achieved in multiple ways:
+
+1. Using product type (like in Golang, `tuple[_TValue, _TException]` for python)
+2. Using sum type (python union `_TValue | _TException`)
+
+`Result` monad is indirectly a sum type of `Ok` and `Err` containers, where `Ok`
+represents success state of operation and `Err` container represents failure.
+
+In order to make existing sync and async function support `Result` one can use
+`result_returns` and `result_returns_async` decorators, that catch any exception
+inside function and based on this condition wrap returned result to `Result`
+monad.
+
+```python
+@result_returns  # converts (Path) -> str to (Path) -> Result[str, Exception]
+def read_file(path: Path):
+    with open(path, "r") as tio:
+        return tio.read()
+
+result = (
+    read_file(some_path)
+    .recover("")  # if result is Err replace it with Ok with passed value
+    .unwrap()  # extract contained value (as we recovered we are sure that
+               # Result is Ok)
+)
+```
+
+## `Many`
+
+Container for iterables, that provides some common methods of working with
+arrays of data like:
+
+- value mapping (`map_values` and `map_values_lazy`)
+- value filtering (`filter_values` and `filter_values_lazy`)
+- value skip/take (`skip_values`, `skip_values_lazy`, `take_values` and
+  `take_values_lazy`)
+- ordering values (`order_values_by`)
+- aggregation (`reduce` and `reduce_to`)
+
+Also supports `Pipeline` operations `map` and `then`.
+
+Methods named as lazy instead of performing computation in-place (with python
+`list`) make generators and should be evaluated lazily (for example with
+`compute` method):
+
+```python
+result = (
+    Many(path.rglob("*"))  # recursively read all files
+    .filter_values_lazy(lambda p: p.is_file() and p.suffix == ".py")
+    .map_values_lazy(read_file)  # iterable of Results
+    .filter_values_lazy(result_is_ok)  # take only Ok results
+    .map_values_lazy(result_unwrap)  # unwrap results to get str
+    .compute()  # forcefully evaluate generator
+    .unwrap()  # extract Iterable[str], but actually list[str]
+)
+```
+
+## `Pairs`
+
+Same as `Many` but for key-value mappings (`dict`). Also allows to perform
+map/filter operations on both keys and values. Values and keys can be extracted
+lazily.
+
+```python
+result = (  # dict[str, dict[str, Any]]
+    # imagine more data
+    Pairs({"Jane": {"age": 34, "sex": "F"}, "Adam": {"age": 15, "sex": "M"}})
+    .filter_by_value(lambda v: v["age"] > 18 and v["sex"] == "M")
+    .map_keys(lambda k: k.lower())
+    .unwrap()
+)
+```
+
+## Curring
+
+In order to properly use `Pipeline` and other monad binding function we need to
+be able to partially apply function: pass some arguments and some leave
+unassigned, but instead of invoking function get new one, that accepts left
+arguments.
+
+Some programming languages (functional mostly, like F#) support curring out of
+the box:
+
+```fsharp
+let addTwoParameters x y =  // number -> number -> number
+   x + y
+
+// this is curring/partial/argument baking - name it
+let addOne = addTwoParameters 1  // number -> number
+
+let result = addOne 3 // 4
+let anotherResult = addTwoParameters 1 3 // 4
+```
+
+Python has built-in `partial`, but it lacks typing, for this reason `pypeline`
+provides special `curried` decorator, that extracts first argument and leave it
+for later assignment:
+
+```python
+def add_two_parameters(x: int, y: int) -> int:
+    return x + y
+
+add_one = curried(add_two_parameters)(1)  # int -> int
+
+print(add_one(3))  # 4
+```
+
 ## Development Guide
 
 ### Starting Development
