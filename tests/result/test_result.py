@@ -177,3 +177,30 @@ async def test_otherwise_async():
 
     assert isinstance(_ok, Ok)
     assert cast(Ok[int], _ok).value == 0
+
+
+def test_recover():
+    other = ""
+
+    _result = Err(0).as_result(str).recover(other)
+
+    assert isinstance(_result, Ok)
+    assert isinstance(_result.value, str)
+    assert _result.value == other
+
+    _result = Err(0).as_result(str).recover(lambda: "f")
+
+    assert isinstance(_result, Ok)
+    assert isinstance(_result.value, str)
+    assert _result.value == "f"
+
+    _result = Ok("str").as_result(int).recover(str)
+
+    assert isinstance(_result, Ok)
+    assert isinstance(_result.value, str)
+    assert _result.value == "str"
+    _result = Ok("str").as_result(int).recover(lambda: "f")
+
+    assert isinstance(_result, Ok)
+    assert isinstance(_result.value, str)
+    assert _result.value == "str"

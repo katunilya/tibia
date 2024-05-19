@@ -205,3 +205,32 @@ async def test_otherwise_async():
     assert isinstance(_ok, Ok)
     assert isinstance(_ok.value, int)
     assert _ok.value == 0
+
+
+@pytest.mark.asyncio
+async def test_recover():
+    other = ""
+
+    _result = await AsyncResult(err_exc_async()).recover(other).value
+
+    assert isinstance(_result, Ok)
+    assert isinstance(_result.value, str)
+    assert _result.value == other
+
+    _result = await AsyncResult(err_exc_async()).recover(lambda: "f").value
+
+    assert isinstance(_result, Ok)
+    assert isinstance(_result.value, str)
+    assert _result.value == "f"
+
+    _result = await AsyncResult(ok_int_async(0)).recover(-1).value
+
+    assert isinstance(_result, Ok)
+    assert isinstance(_result.value, int)
+    assert _result.value == 0
+
+    _result = await AsyncResult(ok_int_async(0)).recover(lambda: -1).value
+
+    assert isinstance(_result, Ok)
+    assert isinstance(_result.value, int)
+    assert _result.value == 0
