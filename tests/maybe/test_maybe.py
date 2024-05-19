@@ -6,6 +6,7 @@ from pypeline.maybe import (
     Empty,
     Maybe,
     Some,
+    maybe_as_empty,
     maybe_as_some,
     maybe_from_optional,
     maybe_is_empty,
@@ -227,3 +228,12 @@ def test_maybe_as_some():
 
     with pytest.raises(ValueError):
         Empty().as_maybe(int).as_some()
+
+
+def test_maybe_as_empty():
+    empty = Empty().as_maybe(int)
+
+    assert maybe_as_empty(empty) == empty.as_empty() == empty
+
+    with pytest.raises(ValueError):
+        Some(0).as_maybe().as_empty()
