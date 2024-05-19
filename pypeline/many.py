@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from functools import reduce
 from types import GeneratorType
-from typing import Any, Callable, Hashable, Iterable, Mapping, cast
+from typing import Any, Callable, Hashable, Iterable, cast
 
 from pypeline.pairs import Pairs
 from pypeline.pipeline import Pipeline
@@ -17,10 +17,16 @@ class Many[_TValue]:
     def unwrap_as_pipeline(self) -> Pipeline[Iterable[_TValue]]:
         return Pipeline(self.value)
 
-    def unwrap_as_pairs[_TKey: Hashable](
-        self, grouper: Callable[[_TValue], _TKey]
-    ) -> Pairs[_TKey, Iterable[_TValue]]:
-        return Pairs(self.group_values_by(grouper))
+    def unwrap_as_pairs[_TKey: Hashable, _TNewValue](
+        self, func: Callable[[_TValue], tuple[_TKey, _TNewValue]]
+    ) -> Pairs[_TKey, _TNewValue]:
+        result = {}
+
+        for v in self.value:
+            _key, _value = func(v)
+            result[_key] = _value
+
+        return Pairs(result)
 
     def map_values[_TResult](self, func: Callable[[_TValue], _TResult]):
         return Many([func(v) for v in self.value])
@@ -66,9 +72,7 @@ class Many[_TValue]:
     ):
         return reduce(func, self.value, initial)
 
-    def group_values_by[_TKey: Hashable](
-        self, grouper: Callable[[_TValue], _TKey]
-    ) -> Mapping[_TKey, Iterable[_TValue]]:
+    def group_values_by[_TKey: Hashable](self, grouper: Callable[[_TValue], _TKey]):
         result = dict[_TKey, list[_TValue]]()
 
         for v in self.value:
@@ -78,7 +82,7 @@ class Many[_TValue]:
 
             result[key].append(v)
 
-        return result
+        return Pairs(result)
 
     def order_values_by(
         self, *, key: Callable[[_TValue], Any] | None = None, reverse: bool = False

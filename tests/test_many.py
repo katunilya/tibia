@@ -63,13 +63,15 @@ def test_unwrap_as_pairs(
     finite_generator: Callable[[], Generator[int, Any, None]],
     int_list: list[int],
 ):
-    p = Many(finite_generator()).unwrap_as_pairs(lambda x: -x)
+    p = Many(finite_generator()).unwrap_as_pairs(lambda x: (x - 10, x))
     assert isinstance(p, Pairs)
-    assert all([isinstance(v, list) for v in p.values()])
+    assert all([isinstance(v, int) for v in p.values()])
+    assert all([k == v - 10 for k, v in p.unwrap().items()])
 
-    p = Many(int_list).unwrap_as_pairs(lambda x: -x)
+    p = Many(int_list).unwrap_as_pairs(lambda x: (x - 10, x))
     assert isinstance(p, Pairs)
-    assert all([isinstance(v, list) for v in p.values()])
+    assert all([isinstance(v, int) for v in p.values()])
+    assert all([k == v - 10 for k, v in p.unwrap().items()])
 
 
 def test_map_values(
@@ -226,6 +228,19 @@ def test_reduce_values_to(
     r = Many(int_list).reduce_values_to(lambda acc, nxt: acc + nxt, -sum(int_list))
     assert isinstance(r, int)
     assert r == 0
+
+
+def test_group_values_by(
+    finite_generator: Callable[[], Generator[int, Any, None]],
+    int_list: list[int],
+):
+    p = Many(finite_generator()).group_values_by(lambda x: -x)
+    assert isinstance(p, Pairs)
+    assert all([isinstance(v, list) for v in p.values()])
+
+    p = Many(int_list).group_values_by(lambda x: -x)
+    assert isinstance(p, Pairs)
+    assert all([isinstance(v, list) for v in p.values()])
 
 
 order_by_parametrize = pytest.mark.parametrize(
