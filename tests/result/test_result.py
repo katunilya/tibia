@@ -8,6 +8,7 @@ from pypeline.result import (
     AsyncResult,
     Err,
     Ok,
+    result_is_err,
     result_is_ok,
     result_returns,
     result_unwrap,
@@ -227,3 +228,11 @@ def test_result_is_ok():
 
     result = Err(0).as_result(str)
     assert result.is_ok() == result_is_ok(result)
+
+
+def test_result_is_err():
+    result = Ok(0).as_result(str)
+    assert result.is_err() == result_is_err(result)
+
+    result = Err(0).as_result(str)
+    assert result.is_err() == result_is_err(result)

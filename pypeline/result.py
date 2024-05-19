@@ -285,3 +285,7 @@ def result_unwrap[_TOk](result: Result[_TOk, Any]) -> _TOk:
 
 def result_is_ok(result: Result[Any, Any]) -> bool:
     return result.is_ok()
+
+
+def result_is_err(result: Result[Any, Any]) -> bool:
+    return result.is_err()
