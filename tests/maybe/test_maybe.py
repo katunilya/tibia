@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from pypeline.maybe import Empty, Some, maybe_from_optional, maybe_returns
+from pypeline.maybe import Empty, Some, maybe_from_optional, maybe_returns, maybe_unwrap
 from pypeline.pipeline import Pipeline
 from pypeline.result import Err, Ok
 from tests.example_functions import (
@@ -190,3 +190,11 @@ async def test_then_or_async_empty():
 def test_optional_safe():
     assert isinstance(maybe_returns(can_return_optional)(True), Empty)
     assert isinstance(maybe_returns(can_return_optional)(False), Some)
+
+
+def test_maybe_unwrap():
+    some = Some(0).as_maybe()
+    assert maybe_unwrap(some) == some.unwrap()
+
+    with pytest.raises(ValueError):
+        maybe_unwrap(Empty().as_maybe(int))

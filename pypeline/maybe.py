@@ -251,3 +251,7 @@ def maybe_from_optional[_TValue](value: _TValue | None) -> Maybe[_TValue]:
     if value is None:
         return _Empty
     return Some(value)
+
+
+def maybe_unwrap[_TValue](maybe: Maybe[_TValue]) -> _TValue:
+    return maybe.unwrap()
