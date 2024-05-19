@@ -1,16 +1,16 @@
 from typing import Callable
 
+from pypeline.curry import curried
 from pypeline.predicate import Predicate
-from pypeline.utils import curry_first
 from tests.example_functions import add
 
 
-@curry_first
+@curried
 def is_more_then(number: int, limit: int):
     return number > limit
 
 
-@curry_first
+@curried
 def is_less_then(number: int, limit: int):
     return number < limit
 
