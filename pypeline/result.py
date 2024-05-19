@@ -277,3 +277,7 @@ def result_returns_async[**_ParamSpec, _TOk](
         return AsyncResult(__result_returns_async())
 
     return _result_returns_async  # type: ignore
+
+
+def result_unwrap[_TOk](result: Result[_TOk, Any]) -> _TOk:
+    return result.unwrap()

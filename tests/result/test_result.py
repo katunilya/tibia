@@ -4,7 +4,7 @@ import pytest
 
 from pypeline.maybe import Maybe
 from pypeline.pipeline import Pipeline
-from pypeline.result import AsyncResult, Err, Ok, result_returns
+from pypeline.result import AsyncResult, Err, Ok, result_returns, result_unwrap
 from tests.example_functions import add, add_async, can_raise_exception
 
 
@@ -204,3 +204,11 @@ def test_recover():
     assert isinstance(_result, Ok)
     assert isinstance(_result.value, str)
     assert _result.value == "str"
+
+
+def test_result_unwrap():
+    result = Ok(0).as_result(str)
+    assert result.unwrap() == result_unwrap(result)
+
+    with pytest.raises(ValueError):
+        result_unwrap(Err("").as_result(str))
