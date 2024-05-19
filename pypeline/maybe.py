@@ -136,9 +136,9 @@ class Maybe[_TValue](ABC):
     def unwrap_as_result_or(self, other: _TValue | Callable[[], _TValue]):
         if not isinstance(self, Some):
             _other = cast(_TValue, other() if isinstance(other, Callable) else other)
-            return result.Ok(_other).as_result(Exception)
+            return result.Ok(_other).with_err(Exception)
 
-        return result.Ok(self.value).as_result(Exception)
+        return result.Ok(self.value).with_err(Exception)
 
     def unwrap_as_pipeline(self):
         if not isinstance(self, Some):

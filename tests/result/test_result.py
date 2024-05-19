@@ -167,11 +167,11 @@ def test_result_returns():
 
 
 def test_otherwise():
-    _err = Err(0).as_result(str).otherwise(add(1))
+    _err = Err(0).with_ok(str).otherwise(add(1))
     assert isinstance(_err, Err)
     assert _err.value == 1
 
-    _ok = Ok(0).as_result(int).otherwise(add(1))
+    _ok = Ok(0).with_err(int).otherwise(add(1))
 
     assert isinstance(_ok, Ok)
     assert cast(Ok[int], _ok).value == 0
@@ -179,11 +179,11 @@ def test_otherwise():
 
 @pytest.mark.asyncio
 async def test_otherwise_async():
-    _err = await (Err(0).as_result(str).otherwise_async(add_async(1))).value
+    _err = await (Err(0).with_ok(str).otherwise_async(add_async(1))).value
     assert isinstance(_err, Err)
     assert _err.value == 1
 
-    _ok = await (Ok(0).as_result(int).otherwise_async(add_async(1))).value
+    _ok = await (Ok(0).with_err(int).otherwise_async(add_async(1))).value
 
     assert isinstance(_ok, Ok)
     assert cast(Ok[int], _ok).value == 0
@@ -192,24 +192,24 @@ async def test_otherwise_async():
 def test_recover():
     other = ""
 
-    _result = Err(0).as_result(str).recover(other)
+    _result = Err(0).with_ok(str).recover(other)
 
     assert isinstance(_result, Ok)
     assert isinstance(_result.value, str)
     assert _result.value == other
 
-    _result = Err(0).as_result(str).recover(lambda: "f")
+    _result = Err(0).with_ok(str).recover(lambda: "f")
 
     assert isinstance(_result, Ok)
     assert isinstance(_result.value, str)
     assert _result.value == "f"
 
-    _result = Ok("str").as_result(int).recover(str)
+    _result = Ok("str").with_err(int).recover(str)
 
     assert isinstance(_result, Ok)
     assert isinstance(_result.value, str)
     assert _result.value == "str"
-    _result = Ok("str").as_result(int).recover(lambda: "f")
+    _result = Ok("str").with_err(int).recover(lambda: "f")
 
     assert isinstance(_result, Ok)
     assert isinstance(_result.value, str)
@@ -217,32 +217,32 @@ def test_recover():
 
 
 def test_result_unwrap():
-    result = Ok(0).as_result(str)
+    result = Ok(0).with_err(str)
     assert result.unwrap() == result_unwrap(result)
 
     with pytest.raises(ValueError):
-        result_unwrap(Err("").as_result(str))
+        result_unwrap(Err("").with_ok(str))
 
 
 def test_result_is_ok():
-    result = Ok(0).as_result(str)
+    result = Ok(0).with_err(str)
     assert result.is_ok() == result_is_ok(result)
 
-    result = Err(0).as_result(str)
+    result = Err(0).with_ok(str)
     assert result.is_ok() == result_is_ok(result)
 
 
 def test_result_is_err():
-    result = Ok(0).as_result(str)
+    result = Ok(0).with_err(str)
     assert result.is_err() == result_is_err(result)
 
-    result = Err(0).as_result(str)
+    result = Err(0).with_ok(str)
     assert result.is_err() == result_is_err(result)
 
 
 def test_result_as_err():
-    _ok = Ok(0).as_result(str)
-    _err = Err(0).as_result(str)
+    _ok = Ok(0).with_err(str)
+    _err = Err(0).with_ok(str)
 
     assert isinstance(result_as_err(_err), Err)
     assert result_as_err(_err) == _err.as_err()
@@ -252,8 +252,8 @@ def test_result_as_err():
 
 
 def test_result_as_ok():
-    _ok = Ok(0).as_result(str)
-    _err = Err(0).as_result(str)
+    _ok = Ok(0).with_err(str)
+    _err = Err(0).with_ok(str)
 
     assert isinstance(result_as_ok(_ok), Ok)
     assert result_as_ok(_ok) == _ok.as_ok()
