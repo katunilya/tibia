@@ -259,3 +259,7 @@ def maybe_unwrap[_TValue](maybe: Maybe[_TValue]) -> _TValue:
 
 def maybe_is_some(maybe: Maybe[Any]) -> bool:
     return maybe.is_some()
+
+
+def maybe_is_empty(maybe: Maybe[Any]) -> bool:
+    return maybe.is_empty()

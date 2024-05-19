@@ -7,6 +7,7 @@ from pypeline.maybe import (
     Maybe,
     Some,
     maybe_from_optional,
+    maybe_is_empty,
     maybe_is_some,
     maybe_returns,
     maybe_unwrap,
@@ -211,3 +212,8 @@ def test_maybe_unwrap():
 @pytest.mark.parametrize("m, result", [(Some(0), True), (Empty(), False)])
 def test_maybe_is_some(m: Maybe[Any], result: bool):
     assert maybe_is_some(m) == m.is_some() == result
+
+
+@pytest.mark.parametrize("m, result", [(Some(0), False), (Empty(), True)])
+def test_maybe_is_empty(m: Maybe[Any], result: bool):
+    assert maybe_is_empty(m) == m.is_empty() == result
