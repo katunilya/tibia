@@ -91,6 +91,18 @@ class AsyncMaybe[_TValue](ABC):
 
 
 class Maybe[_TValue](ABC):
+    def as_some(self) -> Some[_TValue]:
+        if not isinstance(self, Some):
+            raise ValueError("cannot cast to Some")
+
+        return self
+
+    def as_empty(self) -> Empty:
+        if not isinstance(self, Empty):
+            raise ValueError("cannot cast to Empty")
+
+        return self
+
     def is_some(self) -> bool:
         return isinstance(self, Some)
 
@@ -251,3 +263,23 @@ def maybe_from_optional[_TValue](value: _TValue | None) -> Maybe[_TValue]:
     if value is None:
         return _Empty
     return Some(value)
+
+
+def maybe_unwrap[_TValue](maybe: Maybe[_TValue]) -> _TValue:
+    return maybe.unwrap()
+
+
+def maybe_is_some(maybe: Maybe[Any]) -> bool:
+    return maybe.is_some()
+
+
+def maybe_is_empty(maybe: Maybe[Any]) -> bool:
+    return maybe.is_empty()
+
+
+def maybe_as_some[_TValue](maybe: Maybe[_TValue]) -> Some[_TValue]:
+    return maybe.as_some()
+
+
+def maybe_as_empty(maybe: Maybe[Any]) -> Empty:
+    return maybe.as_empty()

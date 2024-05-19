@@ -2,7 +2,18 @@ from typing import Any
 
 import pytest
 
-from pypeline.maybe import Empty, Some, maybe_from_optional, maybe_returns
+from pypeline.maybe import (
+    Empty,
+    Maybe,
+    Some,
+    maybe_as_empty,
+    maybe_as_some,
+    maybe_from_optional,
+    maybe_is_empty,
+    maybe_is_some,
+    maybe_returns,
+    maybe_unwrap,
+)
 from pypeline.pipeline import Pipeline
 from pypeline.result import Err, Ok
 from tests.example_functions import (
@@ -190,3 +201,39 @@ async def test_then_or_async_empty():
 def test_optional_safe():
     assert isinstance(maybe_returns(can_return_optional)(True), Empty)
     assert isinstance(maybe_returns(can_return_optional)(False), Some)
+
+
+def test_maybe_unwrap():
+    some = Some(0).as_maybe()
+    assert maybe_unwrap(some) == some.unwrap()
+
+    with pytest.raises(ValueError):
+        maybe_unwrap(Empty().as_maybe(int))
+
+
+@pytest.mark.parametrize("m, result", [(Some(0), True), (Empty(), False)])
+def test_maybe_is_some(m: Maybe[Any], result: bool):
+    assert maybe_is_some(m) == m.is_some() == result
+
+
+@pytest.mark.parametrize("m, result", [(Some(0), False), (Empty(), True)])
+def test_maybe_is_empty(m: Maybe[Any], result: bool):
+    assert maybe_is_empty(m) == m.is_empty() == result
+
+
+def test_maybe_as_some():
+    some = Some(0).as_maybe()
+
+    assert maybe_as_some(some) == some.as_some() == some
+
+    with pytest.raises(ValueError):
+        Empty().as_maybe(int).as_some()
+
+
+def test_maybe_as_empty():
+    empty = Empty().as_maybe(int)
+
+    assert maybe_as_empty(empty) == empty.as_empty() == empty
+
+    with pytest.raises(ValueError):
+        Some(0).as_maybe().as_empty()

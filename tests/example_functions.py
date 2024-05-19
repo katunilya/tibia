@@ -1,44 +1,44 @@
 from typing import Any
 
-from pypeline.utils import curry_first
+from pypeline.curry import curried
 
 
-@curry_first
+@curried
 def add(x: int, y: int):
     return x + y
 
 
-@curry_first
+@curried
 def multiply(x: int, y: int):
     return x * y
 
 
-@curry_first
+@curried
 def subtract(x: int, y: int):
     return x - y
 
 
-@curry_first
+@curried
 def divide(x: int, y: int):
     return x // y
 
 
-@curry_first
+@curried
 async def add_async(x: int, y: int):
     return x + y
 
 
-@curry_first
+@curried
 async def multiply_async(x: int, y: int):
     return x * y
 
 
-@curry_first
+@curried
 async def subtract_async(x: int, y: int):
     return x - y
 
 
-@curry_first
+@curried
 async def divide_async(x: int, y: int):
     return x // y
 

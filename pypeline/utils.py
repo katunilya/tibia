@@ -1,4 +1,5 @@
-from typing import Callable, Concatenate
+from functools import wraps
+from typing import Any, Callable
 
 
 def identity[_TValue](value: _TValue) -> _TValue:
@@ -9,13 +10,10 @@ async def async_identity[_TValue](value: _TValue) -> _TValue:
     return value  # pragma: no cover
 
 
-def curry_first[_TFirst, **_ParamSpec, _TResult](
-    func: Callable[Concatenate[_TFirst, _ParamSpec], _TResult],
-) -> Callable[_ParamSpec, Callable[[_TFirst], _TResult]]:
-    def _curry_first(*args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs):
-        def __curry_first(first_arg: _TFirst):
-            return func(first_arg, *args, **kwargs)
+def passing[_TValue](func: Callable[[_TValue], Any]) -> Callable[[_TValue], _TValue]:
+    @wraps(func)
+    def _passing(value: _TValue) -> _TValue:
+        func(value)
+        return value
 
-        return __curry_first
-
-    return _curry_first
+    return _passing

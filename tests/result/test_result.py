@@ -4,7 +4,17 @@ import pytest
 
 from pypeline.maybe import Maybe
 from pypeline.pipeline import Pipeline
-from pypeline.result import AsyncResult, Err, Ok, result_returns
+from pypeline.result import (
+    AsyncResult,
+    Err,
+    Ok,
+    result_as_err,
+    result_as_ok,
+    result_is_err,
+    result_is_ok,
+    result_returns,
+    result_unwrap,
+)
 from tests.example_functions import add, add_async, can_raise_exception
 
 
@@ -204,3 +214,49 @@ def test_recover():
     assert isinstance(_result, Ok)
     assert isinstance(_result.value, str)
     assert _result.value == "str"
+
+
+def test_result_unwrap():
+    result = Ok(0).as_result(str)
+    assert result.unwrap() == result_unwrap(result)
+
+    with pytest.raises(ValueError):
+        result_unwrap(Err("").as_result(str))
+
+
+def test_result_is_ok():
+    result = Ok(0).as_result(str)
+    assert result.is_ok() == result_is_ok(result)
+
+    result = Err(0).as_result(str)
+    assert result.is_ok() == result_is_ok(result)
+
+
+def test_result_is_err():
+    result = Ok(0).as_result(str)
+    assert result.is_err() == result_is_err(result)
+
+    result = Err(0).as_result(str)
+    assert result.is_err() == result_is_err(result)
+
+
+def test_result_as_err():
+    _ok = Ok(0).as_result(str)
+    _err = Err(0).as_result(str)
+
+    assert isinstance(result_as_err(_err), Err)
+    assert result_as_err(_err) == _err.as_err()
+
+    with pytest.raises(ValueError):
+        _ok.as_err()
+
+
+def test_result_as_ok():
+    _ok = Ok(0).as_result(str)
+    _err = Err(0).as_result(str)
+
+    assert isinstance(result_as_ok(_ok), Ok)
+    assert result_as_ok(_ok) == _ok.as_ok()
+
+    with pytest.raises(ValueError):
+        _err.as_ok()
