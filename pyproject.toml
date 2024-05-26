@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tibia"
-version = "1.1.0"
+version = "1.2.0"
 description = "Monads in python for pipeline-based development with Rust-like interface"
 authors = ["Ilya Katun <katun.ilya@gmail.com>"]
 readme = "README.md"
