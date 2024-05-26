@@ -5,7 +5,7 @@ description = "Monads in python for pipeline-based development with Rust-like in
 authors = ["Ilya Katun <katun.ilya@gmail.com>"]
 readme = "README.md"
 license = "MIT"
-packages = [{ include = "tibia" }]
+packages = [{ include = "tibia" }, { include = "tibia/py.typed" }]
 repository = 'https://github.com/katunilya/tibia'
 keywords = ["monad", "functional", "pipeline", "rust"]
 
