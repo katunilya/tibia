@@ -5,7 +5,7 @@ from abc import ABC
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Type, cast
 
-from pypeline import pipeline, result
+from tibia import pipeline, result
 
 
 @dataclass(slots=True)

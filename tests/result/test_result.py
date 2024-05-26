@@ -2,9 +2,9 @@ from typing import cast
 
 import pytest
 
-from pypeline.maybe import Maybe
-from pypeline.pipeline import Pipeline
-from pypeline.result import (
+from tibia.maybe import Maybe
+from tibia.pipeline import Pipeline
+from tibia.result import (
     AsyncResult,
     Err,
     Ok,

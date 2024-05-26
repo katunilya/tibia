@@ -8,7 +8,7 @@ setup:
 	poetry env use ${PYTHON_VERSION}
 	poetry install --no-root
 	poetry run pre-commit install \
-		--hook-type commit \
+		--hook-type pre-commit \
 		--hook-type commit-msg
 
 format:

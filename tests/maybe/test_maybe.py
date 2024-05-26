@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from pypeline.maybe import (
+from tibia.maybe import (
     Empty,
     Maybe,
     Some,
@@ -14,8 +14,8 @@ from pypeline.maybe import (
     maybe_returns,
     maybe_unwrap,
 )
-from pypeline.pipeline import Pipeline
-from pypeline.result import Err, Ok
+from tibia.pipeline import Pipeline
+from tibia.result import Err, Ok
 from tests.example_functions import (
     add,
     add_async,

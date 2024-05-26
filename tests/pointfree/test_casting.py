@@ -1,7 +1,7 @@
 import pytest
 
-from pypeline.pipeline import Pipeline
-from pypeline.pointfree.casting import as_type, as_type_maybe, as_type_result
+from tibia.pipeline import Pipeline
+from tibia.pointfree.casting import as_type, as_type_maybe, as_type_result
 
 
 class User: ...

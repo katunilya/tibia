@@ -4,9 +4,9 @@ from typing import Any, Callable, Generator, cast
 
 import pytest
 
-from pypeline.many import Many
-from pypeline.pairs import Pairs
-from pypeline.pipeline import Pipeline
+from tibia.many import Many
+from tibia.pairs import Pairs
+from tibia.pipeline import Pipeline
 
 
 @pytest.fixture()

@@ -3,8 +3,8 @@ from functools import reduce
 from types import GeneratorType
 from typing import Any, Callable, Hashable, Iterable, cast
 
-from pypeline.pairs import Pairs
-from pypeline.pipeline import Pipeline
+from tibia.pairs import Pairs
+from tibia.pipeline import Pipeline
 
 
 @dataclass(slots=True)
@@ -20,7 +20,7 @@ class Many[_TValue]:
     def unwrap_as_pairs[_TKey: Hashable, _TNewValue](
         self, func: Callable[[_TValue], tuple[_TKey, _TNewValue]]
     ) -> Pairs[_TKey, _TNewValue]:
-        result = {}
+        result = dict[_TKey, _TNewValue]()
 
         for v in self.value:
             _key, _value = func(v)
