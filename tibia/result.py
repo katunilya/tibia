@@ -5,7 +5,7 @@ from abc import ABC
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Type, cast
 
-from pypeline import maybe, pipeline
+from tibia import maybe, pipeline
 
 
 @dataclass(slots=True)
@@ -90,8 +90,7 @@ class AsyncResult[_TOk, _TErr]:
             _result = await self.value
 
             if isinstance(_result, Err):
-                _err = cast(Err[_TErr], _result)
-                return Err(func(_err.value))
+                return Err(func(_result.value))
 
             return _result
 
@@ -104,8 +103,7 @@ class AsyncResult[_TOk, _TErr]:
             _result = await self.value
 
             if isinstance(_result, Err):
-                _err = cast(Err[_TErr], _result)
-                return Err(await func(_err.value))
+                return Err(await func(_result.value))
 
             return _result
 
@@ -221,7 +219,7 @@ class Result[_TOk, _TErr](ABC):
             _err = cast(Err[_TErr], self)
             return Err(func(_err.value))
 
-        return self
+        return self  # type: ignore
 
     def otherwise_async[_TNewErr](
         self, func: Callable[[_TErr], Awaitable[_TNewErr]]
@@ -231,13 +229,13 @@ class Result[_TOk, _TErr](ABC):
                 _err = cast(Err[_TErr], self)
                 return Err(await func(_err.value))
 
-            return self
+            return self  # type: ignore
 
         return AsyncResult(_otherwise_async())
 
     def recover(self, other: _TOk | Callable[[], _TOk]) -> Result[_TOk, _TErr]:
         if isinstance(self, Err):
-            return Ok(other() if isinstance(other, Callable) else other)
+            return Ok(cast(_TOk, other() if isinstance(other, Callable) else other))
 
         return self
 

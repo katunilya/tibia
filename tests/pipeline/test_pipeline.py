@@ -1,6 +1,6 @@
 import pytest
 
-from pypeline.pipeline import Pipeline
+from tibia.pipeline import Pipeline
 from tests.example_functions import add, add_async
 
 

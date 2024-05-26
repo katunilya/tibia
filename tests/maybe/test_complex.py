@@ -1,6 +1,6 @@
 import pytest
 
-from pypeline.maybe import Empty, Some
+from tibia.maybe import Empty, Some
 from tests.example_functions import add, add_async, multiply, multiply_async, subtract
 
 

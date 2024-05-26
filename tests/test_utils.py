@@ -1,6 +1,6 @@
 import pytest
 
-from pypeline.utils import async_identity, identity, passing
+from tibia.utils import async_identity, identity, passing
 
 
 def test_identity():

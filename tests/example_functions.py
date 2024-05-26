@@ -1,6 +1,6 @@
 from typing import Any
 
-from pypeline.curry import curried
+from tibia.curry import curried
 
 
 @curried

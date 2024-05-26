@@ -1,7 +1,7 @@
 import pytest
 
-from pypeline.pipeline import AsyncPipeline
-from pypeline.utils import async_identity
+from tibia.pipeline import AsyncPipeline
+from tibia.utils import async_identity
 from tests.example_functions import add, add_async
 
 

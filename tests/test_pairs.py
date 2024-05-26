@@ -3,7 +3,7 @@ from typing import Any, Mapping, cast
 
 import pytest
 
-from pypeline.pairs import Pairs
+from tibia.pairs import Pairs
 
 
 @pytest.fixture()

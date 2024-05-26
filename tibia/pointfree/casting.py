@@ -1,7 +1,7 @@
 from typing import Any, Callable, Type
 
-from pypeline.maybe import Empty, Maybe, Some
-from pypeline.result import Err, Ok, Result
+from tibia.maybe import Empty, Maybe, Some
+from tibia.result import Err, Ok, Result
 
 
 def as_type[_TType](target_type: Type[_TType]) -> Callable[[Any], _TType]:

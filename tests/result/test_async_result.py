@@ -1,8 +1,8 @@
 import pytest
 
-from pypeline.maybe import AsyncMaybe
-from pypeline.pipeline import AsyncPipeline
-from pypeline.result import AsyncResult, Err, Ok, result_returns_async
+from tibia.maybe import AsyncMaybe
+from tibia.pipeline import AsyncPipeline
+from tibia.result import AsyncResult, Err, Ok, result_returns_async
 from tests.example_functions import add, add_async, can_raise_exception_async, str_async
 
 

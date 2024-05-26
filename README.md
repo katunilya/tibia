@@ -1,4 +1,4 @@
-# `pypeline`
+# `tibia`
 
 Simple library that provides some monad-like containers for "pipeline"-based code style.
 It is developed with simple idea in mind: important parts of code base (specifically
@@ -13,7 +13,7 @@ which is opposite to invoking function with data:
 ```python
 from typing import Any
 
-from pypeline.pipeline import Pipeline
+from tibia.pipeline import Pipeline
 
 
 def set_admin_status(user: dict[str, Any]) -> dict[str, Any]:
@@ -131,7 +131,7 @@ So `UpdateUser` structure can be implemented as:
 from datetime import datetime
 from typing import Optional
 
-from pypeline.maybe import Maybe
+from tibia.maybe import Maybe
 
 
 class UpdateUser:
@@ -156,10 +156,9 @@ value = ( # type of str
 
 ## `Result` & `AsyncResult`
 
-Python exception handling lacks one very important feature - it is hard to
-oversee whether some function raises Exception or not. In order to make
-exception more reliable and predictable we can return Exceptions or any other
-error states.
+Python exception handling lacks one very important feature - it is hard to oversee
+whether some function raises Exception or not. In order to make exception more reliable
+and predictable we can return Exceptions or any other error states.
 
 It can be achieved in multiple ways:
 
@@ -170,9 +169,8 @@ It can be achieved in multiple ways:
 represents success state of operation and `Err` container represents failure.
 
 In order to make existing sync and async function support `Result` one can use
-`result_returns` and `result_returns_async` decorators, that catch any exception
-inside function and based on this condition wrap returned result to `Result`
-monad.
+`result_returns` and `result_returns_async` decorators, that catch any exception inside
+function and based on this condition wrap returned result to `Result` monad.
 
 ```python
 @result_returns  # converts (Path) -> str to (Path) -> Result[str, Exception]
@@ -190,8 +188,8 @@ result = (
 
 ## `Many`
 
-Container for iterables, that provides some common methods of working with
-arrays of data like:
+Container for iterables, that provides some common methods of working with arrays of
+data like:
 
 - value mapping (`map_values` and `map_values_lazy`)
 - value filtering (`filter_values` and `filter_values_lazy`)
@@ -202,9 +200,8 @@ arrays of data like:
 
 Also supports `Pipeline` operations `map` and `then`.
 
-Methods named as lazy instead of performing computation in-place (with python
-`list`) make generators and should be evaluated lazily (for example with
-`compute` method):
+Methods named as lazy instead of performing computation in-place (with python `list`)
+make generators and should be evaluated lazily (for example with `compute` method):
 
 ```python
 result = (
@@ -220,9 +217,8 @@ result = (
 
 ## `Pairs`
 
-Same as `Many` but for key-value mappings (`dict`). Also allows to perform
-map/filter operations on both keys and values. Values and keys can be extracted
-lazily.
+Same as `Many` but for key-value mappings (`dict`). Also allows to perform map/filter
+operations on both keys and values. Values and keys can be extracted lazily.
 
 ```python
 result = (  # dict[str, dict[str, Any]]
@@ -236,13 +232,11 @@ result = (  # dict[str, dict[str, Any]]
 
 ## Curring
 
-In order to properly use `Pipeline` and other monad binding function we need to
-be able to partially apply function: pass some arguments and some leave
-unassigned, but instead of invoking function get new one, that accepts left
-arguments.
+In order to properly use `Pipeline` and other monad binding function we need to be able
+to partially apply function: pass some arguments and some leave unassigned, but instead
+of invoking function get new one, that accepts left arguments.
 
-Some programming languages (functional mostly, like F#) support curring out of
-the box:
+Some programming languages (functional mostly, like F#) support curring out of the box:
 
 ```fsharp
 let addTwoParameters x y =  // number -> number -> number
@@ -255,9 +249,9 @@ let result = addOne 3 // 4
 let anotherResult = addTwoParameters 1 3 // 4
 ```
 
-Python has built-in `partial`, but it lacks typing, for this reason `pypeline`
-provides special `curried` decorator, that extracts first argument and leave it
-for later assignment:
+Python has built-in `partial`, but it lacks typing, for this reason `tibia` provides
+special `curried` decorator, that extracts first argument and leave it for later
+assignment:
 
 ```python
 def add_two_parameters(x: int, y: int) -> int:
@@ -288,7 +282,7 @@ Clone repository
     </summary>
 
     ```sh
-    git clone https://github.com/katunilya/pypeline.git
+    git clone https://github.com/katunilya/tibia.git
     ```
 </details>
 
@@ -298,7 +292,7 @@ Clone repository
     </summary>
 
     ```sh
-    git clone git@github.com:katunilya/pypeline.git
+    git clone git@github.com:katunilya/tibia.git
     ```
 </details>
 
@@ -308,7 +302,7 @@ Clone repository
     </summary>
 
     ```sh
-    gh repo clone katunilya/pypeline
+    gh repo clone katunilya/tibia
     ```
 </details>
 
@@ -326,9 +320,9 @@ Other commands in `Makefile` are pretty self-explanatory.
 
 ### Making And Developing Issue
 
-Using web UI or GitHub CLI create new Issue in repository. If Issue title
-provides clean information about changes one can leave it as is, but we
-encourage providing details in Issue body.
+Using web UI or GitHub CLI create new Issue in repository. If Issue title provides clean
+information about changes one can leave it as is, but we encourage providing details in
+Issue body.
 
 In order to start developing new issue create branch with the following naming
 convention:
@@ -347,24 +341,23 @@ To make a commit use `commitizen`:
 cz c
 ```
 
-This would invoke a set of prompts that one should follow in order to make
-correct conventional commits.
+This would invoke a set of prompts that one should follow in order to make correct
+conventional commits.
 
 ### Preparing Release
 
-When new release is coming firstly observe changes that are going to become a
-part of this release in order to understand what SemVer should be provided. Than
-create Issue on preparing release with title `Release v<X>.<Y>.<Z>` and develop
-it as any other issue.
+When new release is coming firstly observe changes that are going to become a part of
+this release in order to understand what SemVer should be provided. Than create Issue on
+preparing release with title `Release v<X>.<Y>.<Z>` and develop it as any other issue.
 
-Developing release Issue might include some additions to documentation and
-anything that does not change code base crucially (better not changes in code).
-Only **required** thing to do in release Issue is change version of project in
-`pyproject.toml` via `poetry`:
+Developing release Issue might include some additions to documentation and anything that
+does not change code base crucially (better not changes in code). Only **required**
+thing to do in release Issue is change version of project in `pyproject.toml` via
+`poetry`:
 
 ```sh
 poetry version <SemVer>
 ```
 
-When release branch is merged to `main` new release tag and GitHub release are
-made (via web UI or GitHub CLI).
+When release branch is merged to `main` new release tag and GitHub release are made (via
+web UI or GitHub CLI).

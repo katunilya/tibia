@@ -1,5 +1,5 @@
-from pypeline.many import Many
-from pypeline.pointfree.many import join
+from tibia.many import Many
+from tibia.pointfree.many import join
 
 
 def test_join():

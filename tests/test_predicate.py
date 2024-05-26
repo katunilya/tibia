@@ -1,7 +1,7 @@
 from typing import Callable
 
-from pypeline.curry import curried
-from pypeline.predicate import Predicate
+from tibia.curry import curried
+from tibia.predicate import Predicate
 from tests.example_functions import add
 
 

@@ -1,6 +1,6 @@
 import pytest
 
-from pypeline.compose import Compose
+from tibia.compose import Compose
 from tests.example_functions import add, add_async
 
 
