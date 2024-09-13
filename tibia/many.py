@@ -137,3 +137,6 @@ class Many[_TValue]:
 
     def unwrap_as_set_pipeline(self) -> Pipeline[set[_TValue]]:
         return Pipeline(self.unwrap_as_set())
+
+    def unwrap_as_generator_pipeline(self) -> Pipeline[Generator[_TValue, None, None]]:
+        return Pipeline(self.unwrap_as_generator())

@@ -353,3 +353,9 @@ def test_unwrap_as_set_pipeline():
     pipeline = Many([1, 2, 3, 4, 5]).unwrap_as_set_pipeline()
 
     assert isinstance(pipeline, Pipeline)
+
+
+def test_unwrap_as_generator_pipeline():
+    pipeline = Many([1, 2, 3, 4, 5]).unwrap_as_generator_pipeline()
+
+    assert isinstance(pipeline, Pipeline)
