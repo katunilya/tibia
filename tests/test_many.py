@@ -325,3 +325,9 @@ def test_unwrap_as_list(
 
     assert isinstance(many.unwrap(), list)
     assert isinstance(many.unwrap_as_list(), list)
+
+
+def test_unwrap_as_set():
+    result = Many([1, 1, 2, 2, 3, 3, 3]).unwrap_as_set()
+
+    assert result == {1, 2, 3}

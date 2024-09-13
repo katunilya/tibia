@@ -125,3 +125,6 @@ class Many[_TValue]:
             return self.value
 
         return list(self.value)
+
+    def unwrap_as_set(self) -> set[_TValue]:
+        return set(self.value)
