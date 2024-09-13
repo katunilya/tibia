@@ -15,7 +15,7 @@ from tibia.result import (
     result_returns,
     result_unwrap,
 )
-from tests.example_functions import add, add_async, can_raise_exception
+from tests.curried_example_functions import add, add_async, can_raise_exception
 
 
 def test_is():

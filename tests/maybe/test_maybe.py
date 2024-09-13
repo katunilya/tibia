@@ -16,7 +16,7 @@ from tibia.maybe import (
 )
 from tibia.pipeline import Pipeline
 from tibia.result import Err, Ok
-from tests.example_functions import (
+from tests.curried_example_functions import (
     add,
     add_async,
     can_return_optional,

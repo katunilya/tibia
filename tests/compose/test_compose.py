@@ -1,7 +1,7 @@
 import pytest
 
 from tibia.compose import Compose
-from tests.example_functions import add, add_async
+from tests.curried_example_functions import add, add_async
 
 
 def test_call():

@@ -3,7 +3,12 @@ import pytest
 from tibia.maybe import AsyncMaybe
 from tibia.pipeline import AsyncPipeline
 from tibia.result import AsyncResult, Err, Ok, result_returns_async
-from tests.example_functions import add, add_async, can_raise_exception_async, str_async
+from tests.curried_example_functions import (
+    add,
+    add_async,
+    can_raise_exception_async,
+    str_async,
+)
 
 
 async def ok_int_async(value: int):

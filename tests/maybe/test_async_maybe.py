@@ -3,7 +3,7 @@ import pytest
 from tibia.maybe import AsyncMaybe, Empty, Some, maybe_returns_async
 from tibia.pipeline import AsyncPipeline
 from tibia.result import AsyncResult
-from tests.example_functions import add, add_async, can_return_optional_async
+from tests.curried_example_functions import add, add_async, can_return_optional_async
 
 
 async def some_int_async(value: int):

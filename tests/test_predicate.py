@@ -2,7 +2,7 @@ from typing import Callable
 
 from tibia.curry import curried
 from tibia.predicate import Predicate
-from tests.example_functions import add
+from tests.curried_example_functions import add
 
 
 @curried

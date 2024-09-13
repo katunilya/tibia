@@ -2,7 +2,7 @@ import pytest
 
 from tibia.pipeline import AsyncPipeline
 from tibia.utils import async_identity
-from tests.example_functions import add, add_async
+from tests.curried_example_functions import add, add_async
 
 
 @pytest.mark.asyncio
