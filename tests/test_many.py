@@ -310,3 +310,18 @@ def test_then(finite_generator: Callable[[], Generator[int, Any, None]]):
     assert isinstance(iterable, list)
     assert max(iterable) == 100
     assert min(iterable) == -99
+
+
+def test_unwrap_as_list(
+    finite_generator: Callable[[], Generator[int, Any, None]],
+    int_list: list[int],
+):
+    many = Many(finite_generator())
+
+    assert isinstance(many.unwrap(), Generator)
+    assert isinstance(many.unwrap_as_list(), list)
+
+    many = Many(int_list)
+
+    assert isinstance(many.unwrap(), list)
+    assert isinstance(many.unwrap_as_list(), list)

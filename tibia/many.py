@@ -119,3 +119,9 @@ class Many[_TValue]:
         self, func: Callable[[Iterable[_TValue]], Iterable[_TNewValue]]
     ):
         return func(self.value)
+
+    def unwrap_as_list(self) -> list[_TValue]:
+        if isinstance(self.value, list):
+            return self.value
+
+        return list(self.value)
