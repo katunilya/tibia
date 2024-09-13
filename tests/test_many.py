@@ -341,3 +341,9 @@ def test_unwrap_as_generator():
 
     for i, value in enumerate(result):
         assert value == arg[i]
+
+
+def test_unwrap_as_list_pipeline():
+    pipeline = Many([1, 2, 3, 4, 5]).unwrap_as_list_pipeline()
+
+    assert isinstance(pipeline, Pipeline)

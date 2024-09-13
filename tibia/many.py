@@ -131,3 +131,6 @@ class Many[_TValue]:
 
     def unwrap_as_generator(self) -> Generator[_TValue, None, None]:
         yield from self.value
+
+    def unwrap_as_list_pipeline(self) -> Pipeline[list[_TValue]]:
+        return Pipeline(self.unwrap_as_list())
