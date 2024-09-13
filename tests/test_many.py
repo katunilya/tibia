@@ -331,3 +331,13 @@ def test_unwrap_as_set():
     result = Many([1, 1, 2, 2, 3, 3, 3]).unwrap_as_set()
 
     assert result == {1, 2, 3}
+
+
+def test_unwrap_as_generator():
+    arg = [1, 2, 3, 4, 5]
+    result = Many([1, 2, 3, 4, 5]).unwrap_as_generator()
+
+    assert isinstance(result, Generator)
+
+    for i, value in enumerate(result):
+        assert value == arg[i]

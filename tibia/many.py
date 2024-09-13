@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from functools import reduce
 from types import GeneratorType
-from typing import Any, Callable, Hashable, Iterable, cast
+from typing import Any, Callable, Generator, Hashable, Iterable, cast
 
 from tibia.pairs import Pairs
 from tibia.pipeline import Pipeline
@@ -128,3 +128,6 @@ class Many[_TValue]:
 
     def unwrap_as_set(self) -> set[_TValue]:
         return set(self.value)
+
+    def unwrap_as_generator(self) -> Generator[_TValue, None, None]:
+        yield from self.value
