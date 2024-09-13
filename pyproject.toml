@@ -13,14 +13,14 @@ keywords = ["monad", "functional", "pipeline", "rust"]
 python = "^3.12"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.4.0"
+ruff = "^0.6.4"
 pre-commit = "^3.7.0"
 commitizen = "^3.25.0"
 
 [tool.poetry.group.tests.dependencies]
 pytest = "^8.2.0"
 pytest-cov = "^5.0.0"
-pytest-asyncio = "^0.23.6"
+pytest-asyncio = "^0.24.0"
 
 [build-system]
 requires = ["poetry-core"]
