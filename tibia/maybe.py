@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 from abc import ABC
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Type, cast
+from typing import Any, Awaitable, Callable, Concatenate, Type, cast
 
 from tibia import pipeline, result
 
@@ -39,55 +39,75 @@ class AsyncMaybe[_TValue](ABC):
 
         return result.AsyncResult(_unwrap_as_result_or())
 
-    def map[_TResult](self, func: Callable[[_TValue], _TResult]):
+    def map[**_ParamSpec, _TResult](
+        self,
+        func: Callable[Concatenate[_TValue, _ParamSpec], _TResult],
+        *args: _ParamSpec.args,
+        **kwargs: _ParamSpec.kwargs,
+    ):
         async def _map():
-            return (await self.value).map(func)
+            return (await self.value).map(func, *args, **kwargs)
 
         return AsyncMaybe(_map())
 
-    def then[_TResult](
-        self, func: Callable[[_TValue], _TResult]
+    def then[**_ParamSpec, _TResult](
+        self,
+        func: Callable[Concatenate[_TValue, _ParamSpec], _TResult],
+        *args: _ParamSpec.args,
+        **kwargs: _ParamSpec.kwargs,
     ) -> Awaitable[_TResult]:
         async def _then():
-            return (await self.value).then(func)
+            return (await self.value).then(func, *args, **kwargs)
 
         return _then()
 
-    def then_or[_TResult](
+    def then_or[**_ParamSpec, _TResult](
         self,
-        func: Callable[[_TValue], _TResult],
+        func: Callable[Concatenate[_TValue, _ParamSpec], _TResult],
         other: _TResult | Callable[[], _TResult],
+        *args: _ParamSpec.args,
+        **kwargs: _ParamSpec.kwargs,
     ) -> Awaitable[_TResult]:
         async def _then_or():
-            return (await self.value).then_or(func, other)
+            return (await self.value).then_or(func, other, *args, **kwargs)
 
         return _then_or()
 
-    def map_async[_TResult](self, func: Callable[[_TValue], Awaitable[_TResult]]):
+    def map_async[**_ParamSpec, _TResult](
+        self,
+        func: Callable[Concatenate[_TValue, _ParamSpec], Awaitable[_TResult]],
+        *args: _ParamSpec.args,
+        **kwargs: _ParamSpec.kwargs,
+    ):
         async def _map_async():
             maybe = await self.value
             if isinstance(maybe, Some):
-                return Some(await func(maybe.unwrap()))
+                return Some(await func(maybe.unwrap(), *args, **kwargs))
 
             return cast(Maybe[_TResult], maybe)
 
         return AsyncMaybe(_map_async())
 
-    async def then_async[_TResult](
-        self, func: Callable[[_TValue], Awaitable[_TResult]]
-    ) -> _TResult:
-        return await func((await self.value).unwrap())
-
-    async def then_or_async[_TResult](
+    async def then_async[**_ParamSpec, _TResult](
         self,
-        func: Callable[[_TValue], Awaitable[_TResult]],
+        func: Callable[Concatenate[_TValue, _ParamSpec], Awaitable[_TResult]],
+        *args: _ParamSpec.args,
+        **kwargs: _ParamSpec.kwargs,
+    ) -> _TResult:
+        return await func((await self.value).unwrap(), *args, **kwargs)
+
+    async def then_or_async[**_ParamSpec, _TResult](
+        self,
+        func: Callable[Concatenate[_TValue, _ParamSpec], Awaitable[_TResult]],
         other: _TResult | Callable[[], _TResult],
+        *args: _ParamSpec.args,
+        **kwargs: _ParamSpec.kwargs,
     ) -> _TResult:
         maybe = await self.value
         if not isinstance(maybe, Some):
             return cast(_TResult, other() if isinstance(other, Callable) else other)
 
-        return await func(maybe.value)
+        return await func(maybe.value, *args, **kwargs)
 
 
 class Maybe[_TValue](ABC):
@@ -160,49 +180,71 @@ class Maybe[_TValue](ABC):
         )
         return pipeline.Pipeline(_value)
 
-    def map[_TResult](self, func: Callable[[_TValue], _TResult]):
+    def map[**_ParamSpec, _TResult](
+        self,
+        func: Callable[Concatenate[_TValue, _ParamSpec], _TResult],
+        *args: _ParamSpec.args,
+        **kwargs: _ParamSpec.kwargs,
+    ):
         if not isinstance(self, Some):
             return cast(Maybe[_TResult], self)
 
-        return Some(func(self.value)).as_maybe()
+        return Some(func(self.value, *args, **kwargs)).as_maybe()
 
-    def then[_TResult](self, func: Callable[[_TValue], _TResult]):
-        return func(self.unwrap())
-
-    def then_or[_TResult](
+    def then[**_ParamSpec, _TResult](
         self,
-        func: Callable[[_TValue], _TResult],
+        func: Callable[Concatenate[_TValue, _ParamSpec], _TResult],
+        *args: _ParamSpec.args,
+        **kwargs: _ParamSpec.kwargs,
+    ):
+        return func(self.unwrap(), *args, **kwargs)
+
+    def then_or[**_ParamSpec, _TResult](
+        self,
+        func: Callable[Concatenate[_TValue, _ParamSpec], _TResult],
         other: _TResult | Callable[[], _TResult],
+        *args: _ParamSpec.args,
+        **kwargs: _ParamSpec.kwargs,
     ):
         if isinstance(self, Some):
-            return func(self.value)
+            return func(self.value, *args, **kwargs)
 
         return cast(_TResult, other() if isinstance(other, Callable) else other)
 
-    def map_async[_TResult](self, func: Callable[[_TValue], Awaitable[_TResult]]):
+    def map_async[**_ParamSpec, _TResult](
+        self,
+        func: Callable[Concatenate[_TValue, _ParamSpec], Awaitable[_TResult]],
+        *args: _ParamSpec.args,
+        **kwargs: _ParamSpec.kwargs,
+    ):
         async def _map_async():
             if not isinstance(self, Some):
                 return cast(Maybe[_TResult], self)
 
-            return Some(await func(self.value)).as_maybe()
+            return Some(await func(self.value, *args, **kwargs)).as_maybe()
 
         return AsyncMaybe(_map_async())
 
-    async def then_async[_TResult](
-        self, func: Callable[[_TValue], Awaitable[_TResult]]
+    async def then_async[**_ParamSpec, _TResult](
+        self,
+        func: Callable[Concatenate[_TValue, _ParamSpec], Awaitable[_TResult]],
+        *args: _ParamSpec.args,
+        **kwargs: _ParamSpec.kwargs,
     ) -> _TResult:
         if isinstance(self, Some):
-            return await func(self.value)
+            return await func(self.value, *args, **kwargs)
 
         raise ValueError("empty")
 
-    async def then_or_async[_TResult](
+    async def then_or_async[**_ParamSpec, _TResult](
         self,
-        func: Callable[[_TValue], Awaitable[_TResult]],
+        func: Callable[Concatenate[_TValue, _ParamSpec], Awaitable[_TResult]],
         other: _TResult | Callable[[], _TResult],
+        *args: _ParamSpec.args,
+        **kwargs: _ParamSpec.kwargs,
     ) -> _TResult:
         if isinstance(self, Some):
-            return await func(self.value)
+            return await func(self.value, *args, **kwargs)
 
         return cast(_TResult, other() if isinstance(other, Callable) else other)
 
