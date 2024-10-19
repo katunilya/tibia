@@ -310,3 +310,52 @@ def test_then(finite_generator: Callable[[], Generator[int, Any, None]]):
     assert isinstance(iterable, list)
     assert max(iterable) == 100
     assert min(iterable) == -99
+
+
+def test_unwrap_as_list(
+    finite_generator: Callable[[], Generator[int, Any, None]],
+    int_list: list[int],
+):
+    many = Many(finite_generator())
+
+    assert isinstance(many.unwrap(), Generator)
+    assert isinstance(many.unwrap_as_list(), list)
+
+    many = Many(int_list)
+
+    assert isinstance(many.unwrap(), list)
+    assert isinstance(many.unwrap_as_list(), list)
+
+
+def test_unwrap_as_set():
+    result = Many([1, 1, 2, 2, 3, 3, 3]).unwrap_as_set()
+
+    assert result == {1, 2, 3}
+
+
+def test_unwrap_as_generator():
+    arg = [1, 2, 3, 4, 5]
+    result = Many([1, 2, 3, 4, 5]).unwrap_as_generator()
+
+    assert isinstance(result, Generator)
+
+    for i, value in enumerate(result):
+        assert value == arg[i]
+
+
+def test_unwrap_as_list_pipeline():
+    pipeline = Many([1, 2, 3, 4, 5]).unwrap_as_list_pipeline()
+
+    assert isinstance(pipeline, Pipeline)
+
+
+def test_unwrap_as_set_pipeline():
+    pipeline = Many([1, 2, 3, 4, 5]).unwrap_as_set_pipeline()
+
+    assert isinstance(pipeline, Pipeline)
+
+
+def test_unwrap_as_generator_pipeline():
+    pipeline = Many([1, 2, 3, 4, 5]).unwrap_as_generator_pipeline()
+
+    assert isinstance(pipeline, Pipeline)
