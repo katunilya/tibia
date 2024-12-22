@@ -39,15 +39,5 @@ def get_or[K, V](mapping: Mapping[K, V], key: K, default: V) -> V:
     return mapping.get(key, default)
 
 
-def get_or_else[K, V, **P](
-    mapping: Mapping[K, V],
-    key: K,
-    default_func: Callable[P, V],
-    *args: P.args,
-    **kwargs: P.kwargs,
-) -> V:
-    return mapping[key] if key in mapping else default_func(*args, **kwargs)
-
-
 def maybe_get[K, V](mapping: Mapping[K, V], key: K) -> Maybe[V]:
     return Maybe.from_optional(mapping.get(key, None))
