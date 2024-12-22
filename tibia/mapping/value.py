@@ -3,27 +3,27 @@ from typing import Any, Callable, Concatenate, Iterable, Mapping
 from tibia.maybe import Maybe
 
 
-def map[_TKey, _TValue, **_ParamSpec, _TResult](
-    mapping: Mapping[_TKey, _TValue],
-    func: Callable[Concatenate[_TValue, _ParamSpec], _TResult],
-    *args: _ParamSpec.args,
-    **kwargs: _ParamSpec.kwargs,
-) -> Mapping[_TKey, _TResult]:
+def map[K, V, **P, R](
+    mapping: Mapping[K, V],
+    func: Callable[Concatenate[V, P], R],
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> Mapping[K, R]:
     return {key: func(value, *args, **kwargs) for key, value in mapping.items()}
 
 
-def filter[_TKey, _TValue, **_ParamSpec](
-    mapping: Mapping[_TKey, _TValue],
-    func: Callable[Concatenate[_TValue, _ParamSpec], bool],
-    *args: _ParamSpec.args,
-    **kwargs: _ParamSpec.kwargs,
-) -> Mapping[_TKey, _TValue]:
+def filter[K, V, **P](
+    mapping: Mapping[K, V],
+    func: Callable[Concatenate[V, P], bool],
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> Mapping[K, V]:
     return {
         key: value for key, value in mapping.items() if func(value, *args, **kwargs)
     }
 
 
-def iterate[_TValue](mapping: Mapping[Any, _TValue]) -> Iterable[_TValue]:
+def iterate[V](mapping: Mapping[Any, V]) -> Iterable[V]:
     yield from mapping.values()
 
 

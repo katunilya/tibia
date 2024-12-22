@@ -2,24 +2,22 @@ import asyncio
 from typing import Awaitable, Callable, Concatenate, Iterable
 
 
-async def map[_TValue, **_ParamSpec, _TResult](
-    iterable: Iterable[_TValue],
-    func: Callable[Concatenate[_TValue, _ParamSpec], Awaitable[_TResult]],
-    *args: _ParamSpec.args,
-    **kwargs: _ParamSpec.kwargs,
-) -> list[_TResult]:
+async def map[T, **P, R](
+    iterable: Iterable[T],
+    func: Callable[Concatenate[T, P], Awaitable[R]],
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> list[R]:
     return await asyncio.gather(*[func(item, *args, **kwargs) for item in iterable])
 
 
-async def filter[_TValue, **_ParamSpec](
-    iterable: Iterable[_TValue],
-    func: Callable[Concatenate[_TValue, _ParamSpec], Awaitable[bool]],
-    *args: _ParamSpec.args,
-    **kwargs: _ParamSpec.kwargs,
-) -> list[_TValue]:
-    async def _func(
-        item: _TValue, *args: _ParamSpec.args, **kwargs: _ParamSpec.kwargs
-    ) -> tuple[bool, _TValue]:
+async def filter[T, **P](
+    iterable: Iterable[T],
+    func: Callable[Concatenate[T, P], Awaitable[bool]],
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> list[T]:
+    async def _func(item: T, *args: P.args, **kwargs: P.kwargs) -> tuple[bool, T]:
         return (await func(item, *args, **kwargs), item)
 
     tasks = [asyncio.create_task(_func(item, *args, **kwargs)) for item in iterable]

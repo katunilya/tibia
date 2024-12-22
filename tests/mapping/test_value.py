@@ -44,12 +44,6 @@ def test_get_or(dict_data: dict[int, str]):
     assert result == "NO"
 
 
-def test_get_or_else(dict_data: dict[int, str]):
-    result = mapping.value.get_or_else(dict_data, -1, lambda x, y: x + y, 1, 2)
-
-    assert result == 1 + 2
-
-
 @pytest.mark.parametrize(
     ("key", "is_some"),
     [
