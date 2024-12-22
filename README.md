@@ -1,363 +1,431 @@
 # `tibia`
 
-Simple library that provides some monad-like containers for "pipeline"-based code style.
-It is developed with simple idea in mind: important parts of code base (specifically
-those that contain domain-specific logic) must be implemented in human-readable manner
-as text that describes non-technical (or at least not too) details.
+> If you ask why `tibia` is called `tibia` - i don't remember why 😄
 
-## `Pipeline` & `AsyncPipeline`
+## Containers
 
-`Pipeline` & `AsyncPipeline` are basic building blocks for applying function to data
-which is opposite to invoking function with data:
+`tibia` provides several containers for values:
 
-```python
-from typing import Any
+- `Value` for already computed (sync) values with **pipe operator** / **fluent**
+  API
+- `Future` for not yet computed (async) values with **pipe operator** /
+  **fluent** API
+- `Maybe` is well-known monad for present and non-present already competed
+  values with **pipe operator** / **fluent** API; provides 2 containers:
+  - `Some` - value is present and actually contained inside
+  - `Empty` - nothing is contained (something like python `None`)
+- `FutureMaybe` is like `Future` for `Value`, but for `Maybe`
+- `Result` is well-known monad for successful or failed contained value states
+  with **pipe operator** / **fluent** API; provides 2 containers:
+  - `Ok` - value is successfully computed
+  - `Err` - failed to compute value
+- `FutureResult` is like `Future` for `Value`, but for `Maybe`
 
-from tibia.pipeline import Pipeline
+Also `tibia` provides some utilitarian functions for `Iterable` and `Mapping` in
+pipeline-based context:
 
+- `Iterable`
+  - eager
+    - `map` - applies passed function to each element of iterable eagerly
+    - `filter` - filter values in iterable with passed predicate eagerly
+    - `reduce` & `reduce_to` - aggregates iterable values into single value
+    - `sort_asc` & `sort_desc` - sort iterable values
+    - `take` - take first or last N values from iterable (can fail on infinite
+      iterable)
+    - `first` - take first value or default
+    - `skip` - skip first or last N values from iterable (can fail on infinite
+      iterable)
+    - `join` - flatten iterable of iterables into single iterable
+  - async (aio)
+    - `map` - applies passed async function to each element of iterable
+    - `filter` - filters elements in iterable with async predicate function
+  - lazy
+    - `map` - applies passed async function to each element of iterable lazily
+    - `filter` - filters elements in iterable with async predicate function
+      lazily
+  - threaded
+    - `map` - applies passed sync function to each element of iterable in
+      threads
+    - `filter` - filters in threads elements of iterable
+- `Mapping`
+  - value
+    - `map` - applies function to each value of mapping
+    - `filter` - filters mapping pairs based on value
+    - `iterate` - returns iterable of values (lazy as generator)
+    - `set` - set value to key
+    - `get` - get value by key (can raise `KeyError`)
+    - `get_or` - get value or passed default by key
+    - `maybe_get` - get value by key in `Maybe` container (`Some` if key is
+      present, `Empty` if not)
+  - key
+    - `map` - applies function to each key of mapping
+    - `filter` - filters mapping pairs based on key
+    - `iterate` - returns iterable of keys (lazy as generator)
+  - item
+    - `map` - maps key-value pair to new key-value pair
+    - `map_to_value` - maps value based on key-value pair
+    - `map_to_key` - maps key based on key-value pair
+    - `filter` - filters mapping elements based on key-value pairs
+    - `iterate` - returns iterable of key-value pairs (lazy as generator of
+      tuples)
 
-def set_admin_status(user: dict[str, Any]) -> dict[str, Any]:
-    user['role'] = 'admin'
-    return user
+## Value
 
-# invoke function with data
-user_1 = set_admin_status(
-    {
-        'name': 'John Doe',
-        'role': 'member'
-    }
-)
+`Value` is a simple container that brings to python so called **pipe operator**.
 
-# apply function to data
-user_2 = Pipeline({
-        'name': 'John Doe',
-        'role': 'member'
-    }).then(set_admin_status)
-```
-
-With this approach we can build pipelines that process some data performing different
-actions in more declarative manner.
-
-Direct analogue of Pipeline and AsyncPipeline is so-called functional "pipe" operator
-which is usually written as `|>`:
-
-```fsharp
-let result = data |> function // same as `function data`
-```
-
-As a general reference to API methods I used rust Option and Result interfaces. As a
-general rule:
-
-- `map` unwraps contained value, passes it to the function and returns back wrapped
-  result of function invocation
-- `then` unwraps contained value, passes it to the function and returns result
-
-```mermaid
-flowchart LR
-    result[TResult]
-    c_value["Container[TValue]"]
-    c_result["Container[TResult]"]
-
-    subgraph map
-        map_func[function]
-        map_value[TValue] --apply--> map_func
-    end
-
-    subgraph then
-        then_func[function]
-        then_value[TValue] --apply--> then_func
-    end
-
-    c_value --unwrap--> map_value
-    c_value --unwrap--> then_value
-
-    map_func --return--> c_result
-    then_func --return--> result
-```
-
-In case one needs to invoke some async functions there are `map_async` and `then_async`
-methods, that transform `Pipeline` container to `AsyncPipeline` container, which allows
-to invoke async functions in non-async context like JavaScript `Promise` or more widely
-known `Future`. For naming consistency reasons `AsyncPipeline` is called as it called
-instead of being `Future` (also python has some other builtin packages with `Future`
-name).
-
-## `Maybe` & `AsyncMaybe`
-
-Monadic container that replaces logic for `Optional` values. Consists of 2 containers:
-`Some` & `Empty` where `Some` represents actual value and `Empty` represents absence of
-data.
-
-Some might question: do we need additional abstraction for `typing.Optional`? What is
-the purpose of `Empty`?
-
-This is small real-life example: one has a table in database with some data, where some
-columns are nullable and one wishes to perform update on this data with single
-structure.
-
-Structure:
+So how to use it? Put some concrete value to the container, for example a
+number. Now instead of passing this value as an argument to a function pass a
+function as some action that you want to be performed on this value:
 
 ```python
-from datetime import datetime
-from typing import Optional
-
-
-class User:
-    name: str
-    age: int
-    crated_at: datetime
-    deleted_at Optional[datetime]
-```
-
-For field `name`, `age` and `created_at` it seems to be good solution to use `Optional`
-as indication of 2 cases:
-
-- one wants to update field (value is not optional)
-- one does not want to update field (value is optional)
-
-But for deleted_at `Optional` is one of the possible states for update, so how we
-identify that in one request `None` means "update with NULL" and in some other request
-it means "do not update"?
-
-This is where `Maybe` as additional abstraction comes in handy:
-
-- `Some(value)` even if this value is `None` means that we want to update and set new
-  field to `value` wrapped around container
-- `Empty` means that we do not want to update
-
-So `UpdateUser` structure can be implemented as:
-
-```python
-from datetime import datetime
-from typing import Optional
-
-from tibia.maybe import Maybe
-
-
-class UpdateUser:
-    name: Maybe[str]
-    age: Maybe[int]
-    created_at: Maybe[datetime]
-    deleted_at: Maybe[Optional[datetime]]
-```
-
-With this approach we do not have any doubts on what action we actually want to perform.
-
-Simple example of working with `Maybe`:
-
-```py
-value = ( # type of str
-    Some(3)
-    .as_maybe()  # as_maybe performs upper-cast to Maybe[T]
-    .map(lambda x: str(x))  # Maybe[int] -> int -> func -> str -> Maybe[str]
-    .then_or(lambda x: x * 3, '')  # Maybe[str] -> str -> func -> str
-)
-```
-
-## `Result` & `AsyncResult`
-
-Python exception handling lacks one very important feature - it is hard to oversee
-whether some function raises Exception or not. In order to make exception more reliable
-and predictable we can return Exceptions or any other error states.
-
-It can be achieved in multiple ways:
-
-1. Using product type (like in Golang, `tuple[_TValue, _TException]` for python)
-2. Using sum type (python union `_TValue | _TException`)
-
-`Result` monad is indirectly a sum type of `Ok` and `Err` containers, where `Ok`
-represents success state of operation and `Err` container represents failure.
-
-In order to make existing sync and async function support `Result` one can use
-`result_returns` and `result_returns_async` decorators, that catch any exception inside
-function and based on this condition wrap returned result to `Result` monad.
-
-```python
-@result_returns  # converts (Path) -> str to (Path) -> Result[str, Exception]
-def read_file(path: Path):
-    with open(path, "r") as tio:
-        return tio.read()
-
-result = (
-    read_file(some_path)
-    .recover("")  # if result is Err replace it with Ok with passed value
-    .unwrap()  # extract contained value (as we recovered we are sure that
-               # Result is Ok)
-)
-```
-
-## `Many`
-
-Container for iterables, that provides some common methods of working with arrays of
-data like:
-
-- value mapping (`map_values` and `map_values_lazy`)
-- value filtering (`filter_values` and `filter_values_lazy`)
-- value skip/take (`skip_values`, `skip_values_lazy`, `take_values` and
-  `take_values_lazy`)
-- ordering values (`order_values_by`)
-- aggregation (`reduce` and `reduce_to`)
-
-Also supports `Pipeline` operations `map` and `then`.
-
-Methods named as lazy instead of performing computation in-place (with python `list`)
-make generators and should be evaluated lazily (for example with `compute` method):
-
-```python
-result = (
-    Many(path.rglob("*"))  # recursively read all files
-    .filter_values_lazy(lambda p: p.is_file() and p.suffix == ".py")
-    .map_values_lazy(read_file)  # iterable of Results
-    .filter_values_lazy(result_is_ok)  # take only Ok results
-    .map_values_lazy(result_unwrap)  # unwrap results to get str
-    .compute()  # forcefully evaluate generator
-    .unwrap()  # extract Iterable[str], but actually list[str]
-)
-```
-
-## `Pairs`
-
-Same as `Many` but for key-value mappings (`dict`). Also allows to perform map/filter
-operations on both keys and values. Values and keys can be extracted lazily.
-
-```python
-result = (  # dict[str, dict[str, Any]]
-    # imagine more data
-    Pairs({"Jane": {"age": 34, "sex": "F"}, "Adam": {"age": 15, "sex": "M"}})
-    .filter_by_value(lambda v: v["age"] > 18 and v["sex"] == "M")
-    .map_keys(lambda k: k.lower())
+_ = (
+    Value(1)
+    .map(add, 1)
+    .map(multiply_by, 3)
+    .map(subtract, 10)
+    .map(multiply_by, -1)
+    .inspect(print)
     .unwrap()
 )
 ```
 
-## Curring
+Thus we build a declarative chain of actions we perform on some piece of data.
 
-In order to properly use `Pipeline` and other monad binding function we need to be able
-to partially apply function: pass some arguments and some leave unassigned, but instead
-of invoking function get new one, that accepts left arguments.
+### `Value.map`
 
-Some programming languages (functional mostly, like F#) support curring out of the box:
+`Value.map` is method that invokes passed function on contained value. It
+supports not only single-argument functions, but actually any function with only
+one requirement: **contained value must be the first argument for the
+function**. Other arguments can be passed as `*args` and/or `**kwargs` to the
+`Value.map` method.
 
-```fsharp
-let addTwoParameters x y =  // number -> number -> number
-   x + y
-
-// this is curring/partial/argument baking - name it
-let addOne = addTwoParameters 1  // number -> number
-
-let result = addOne 3 // 4
-let anotherResult = addTwoParameters 1 3 // 4
-```
-
-Python has built-in `partial`, but it lacks typing, for this reason `tibia` provides
-special `curried` decorator, that extracts first argument and leave it for later
-assignment:
+So image we have a `Value[int]`. The following example function will be
+completely valid for `Value.map`:
 
 ```python
-def add_two_parameters(x: int, y: int) -> int:
+# simple single-argument function, contained value will be x
+def add_one(x: int) -> int:
+    return x + 1
+
+# 2 argument function, contained value will be x again, and argument for y must
+# be passed following the function argument to map method
+def add(x: int, y: int) -> int:
     return x + y
 
-add_one = curried(add_two_parameters)(1)  # int -> int
-
-print(add_one(3))  # 4
+# again 2 argument function, but in this case y argument can be ommited in map
+def multiply_by(x: int, y: int = 1) -> int:
+    return x * y
 ```
 
-## Development Guide
+`Value.map` returns new `Value` container for data returned from the passed
+function, thus with `Value.map` method chaining one can build pipelines on data.
 
-### Starting Development
+`Value.map` works only with synchronous functions. For asynchronous functions
+use `Value.map_async`.
 
-In order to use `Makefile` scripts one would need:
+### `Value.map_async`
 
-- `pyenv`
-- `python>=3.12` (installed via `pyenv`)
-- `poetry>=1.2`
+`Value.map_async` is direct analogue of `Value.map` but for async functions.
+Main difference is that instead of `Value` it returns `Future` - `tibia`s simple
+container over coroutine (`Future` is discussed further, but most things valid
+for `Value` are valid for `Future` and their interface are very similar).
 
-Clone repository
+### `Value.inspect`
 
-<!-- markdownlint-disable MD033 -->
-<!-- markdownlint-disable MD046 -->
-<details>
-    <summary>
-        HTTPS
-    </summary>
+`Value.inspect` has nearly the same signature as `Value.map` with only
+difference: it does not wrap returned from the passed function value into new
+`Value` container, but returns the current self `Value` container.
 
-    ```sh
-    git clone https://github.com/katunilya/tibia.git
-    ```
-</details>
+Simply this is function for making side-effects - something we want to happen,
+but don't care about result. In the example above `Value.inspect` was used to
+print contained in container value. `print` returns `None`, so if we've used
+`Value.map` we would lost the data, but with `Value.inspect` we just performed
+an action and continued working on already contained data.
 
-<details>
-    <summary>
-        SSH
-    </summary>
+Like `Value.map` can be used only with synchronous functions.
 
-    ```sh
-    git clone git@github.com:katunilya/tibia.git
-    ```
-</details>
+### `Value.inspect_async`
 
-<details>
-    <summary>
-        GitHub CLI
-    </summary>
+Like `Value.map_async` is analogue of `Value.map` for async function that
+returns `Future` containers `Value.inspect_async` is the same for
+`Value.inspect`.
 
-    ```sh
-    gh repo clone katunilya/tibia
-    ```
-</details>
+### `Value.unwrap`
 
-Then run:
+Method for extracting value from container if one is not further needed.
 
-```shell
-make setup
-```
+### `Value.wraps`
 
-With this command python3.12 will be chosen as local python, new python virtual
-environment would be created via `poetry` and dependencies will be install via `poetry`
-and also `pre-commit` hooks will be installed.
-
-Other commands in `Makefile` are pretty self-explanatory.
-
-### Making And Developing Issue
-
-Using web UI or GitHub CLI create new Issue in repository. If Issue title provides clean
-information about changes one can leave it as is, but we encourage providing details in
-Issue body.
-
-In order to start developing new issue create branch with the following naming
-convention:
+Decorator that changes signature of wrapped function by containing returned
+value in `Value` container. For example initial signature was:
 
 ```txt
-<issue-number>-<title>
+fn: (int, int, str) -> str
 ```
 
-As example: `101-how-to-start`
+With `Value.wraps` decorator applied it becomes:
 
-### Making Commit
-
-To make a commit use `commitizen`:
-
-```shell
-cz c
+```txt
+fn: (int, int, str) -> Value[str]
 ```
 
-This would invoke a set of prompts that one should follow in order to make correct
-conventional commits.
+## `Future`
 
-### Preparing Release
+`Future` is direct analogue of `Value`, but for values that are not calculated
+(awaited) yet. For JS developers it might be widely know as `Promise`. It has
+the same as `Value` interface:
 
-When new release is coming firstly observe changes that are going to become a part of
-this release in order to understand what SemVer should be provided. Than create Issue on
-preparing release with title `Release v<X>.<Y>.<Z>` and develop it as any other issue.
+- `Future.map` & `Future.inspect` for sync functions
+- `Future.map_async` & `Future.inspect_async` for async functions
+- `Future.unwrap` for extracting contained value (must be awaited)
 
-Developing release Issue might include some additions to documentation and anything that
-does not change code base crucially (better not changes in code). Only **required**
-thing to do in release Issue is change version of project in `pyproject.toml` via
-`poetry`:
+Additionally one can `await` directly `Future` without `unwrap`:
 
-```sh
-poetry version <SemVer>
+```python
+_ = await future.unwrap()
+
+# same as
+
+_ = await future
 ```
 
-When release branch is merged to `main` new release tag and GitHub release are made (via
-web UI or GitHub CLI).
+This is just a shortcut, but I would generally recommend explicit unwrapping and
+waiting of contained value.
+
+## `Maybe` & `FutureMaybe`
+
+`Maybe` is an alternative for python `Optional`. At first glance it might seem
+that it is not needed, but it provides to apply functions without checks on
+emptiness and also can consider `None` as actual value.
+
+It consists of 2 containers:
+
+- `Some` - indicates that value is present (even if one is `None`)
+- `Empty` - indicates that there is no value
+
+For example let's imagine one is creating data structure for updating some data
+(for example table in DB). Naive approach would be to create some class with
+all-optional fields:
+
+```python
+class UpdateUser:
+  first_name: str | None = None
+  second_name: str | None = None
+  birthdate: datetime | None = None
+```
+
+Imagine that `birthdate` is nullable in table we want to update. If we get this
+structure with `None` in `birthdate` field we cannot determine whether we want
+to set it to `null` or we do not want to perform any update on this column.
+
+With `Maybe` this problem goes away. `Empty` state tells us that we do not want
+to perform action and `Some` unambiguously tells us that we want to set column
+to contained value:
+
+```python
+class UpdateUser:
+  first_name: Maybe[str] = Empty()
+  second_name: Maybe[str] = Empty()
+  birthdate: Maybe[datetime | None] = Empty()
+```
+
+With this approach it is much more clear what each value means and what is valid
+state.
+
+### Piping API
+
+For making pipelines `Maybe` & `FutureMaybe` like `Value` & `Future` provide the
+following methods:
+
+- `map` / `map_async` - apply contained value to function if one is present and
+  wrap result into `Some`
+- `map_or` / `map_or_async` - apply contained value to function if one is
+  present and return result of function directly or replace it with passed
+  default value
+- `inspect` / `inspect_async` - apply function as side-effect if value is
+  present ignoring result of passed function and return current container
+
+Imagine we apply function that returns `R`:
+
+| Container | Method          | Returns                  |
+| --------- | --------------- | ------------------------ |
+| `Ok[T]`   | `map`           | `Ok[R]`                  |
+| `Ok[T]`   | `map_async`     | `FutureMaybe(Ok[R])`     |
+| `Empty`   | `map`           | `Empty`                  |
+| `Empty`   | `map_async`     | `FutureMaybe(Empty)`     |
+| `Ok[T]`   | `map_or`        | `R`                      |
+| `Ok[T]`   | `map_or_async`  | `Future[R]`              |
+| `Empty`   | `map_or`        | `R` from default         |
+| `Empty`   | `map_or_async`  | `Future[R]` from default |
+| `Ok[T]`   | `inspect`       | `Ok[T]`                  |
+| `Ok[T]`   | `inspect_async` | `FutureMaybe(Ok[T])`     |
+| `Empty`   | `inspect`       | `Empty`                  |
+| `Empty`   | `inspect_async` | `FutureMaybe(Empty)`     |
+
+Mainly one would use `map` and `map_async` to perform desired actions without
+thinking if value is present, some side-effect functions (for debugging for
+example) with `inspect` & `inspect_async` and than unwrap value with `map_or` or
+`map_or_async` methods (or via Unwrapping API).
+
+### Unwrapping API
+
+In order to extract value from container one can use one of the following
+methods:
+
+- `expect`
+  - if `Some`: return contained value
+  - if `Empty`: raise `ValueError` with passed error message
+- `unwrap` - same as `expect`, but uses built-in error message `"must be some"`
+- `unwrap_or`
+  - if `Some`: return contained value
+  - if `Empty`: return passed default value
+- `unwrap_or_none`
+  - if `Some`: return contained value
+  - if `Empty`: return `None`
+
+### Logical API
+
+In order to check / validate contained value on can use following methods:
+
+- `is_some` - `True` if container is `Some`, otherwise `False`
+- `is_empty` - `True` if container is `Empty`, otherwise `False`
+- `is_some_and` - `True` if container is `Some` and passed predicate is `True`
+  (function that checks contained value), otherwise `False`  
+- `is_empty_or` - `True` if container is `Empty` or passed predicate is `True`
+  (function that check contained in `Some` value), otherwise `False`
+
+For example imagine we have `is_even` predicate:
+
+| Container | Method        | Returns |
+| --------- | ------------- | ------- |
+| `Ok(2)`   | `is_some_and` | `True`  |
+| `Ok(1)`   | `is_some_and` | `False` |
+| `Empty()` | `is_some_and` | `False` |
+| `Ok(1)`   | `is_empty_or` | `False` |
+| `Ok(2)`   | `is_empty_or` | `True`  |
+| `Empty()` | `is_empty_or` | `True`  |
+
+`is_some_and` & `is_empty_or` methods also have `is_some_and_async` &
+`is_empty_or_async` alternatives for async predicates, as base versions work
+only with sync functions. Async alternatives return `Future[bool]` for further
+piping if needed.
+
+### Construction API
+
+There are a few static function in `Maybe` class used for constructing `Maybe`
+containers:
+
+- `Maybe.from_value` - always wraps value into `Some`
+- `Maybe.from_value_when` - wraps value into `Some` if value satisfies passed
+  predicate, otherwise `Empty`
+- `Maybe.from_optional` - wraps value into `Some` if one is not `None`,
+  otherwise `Empty`
+- `Maybe.from_optional_when` - wraps value into `Some` if value is not `None`
+  and satisfies passed predicate , otherwise `Empty`
+
+### Decorator API
+
+Based on `from_value` and `from_optional` `Maybe` provides 2 decorators for
+functions:
+
+- `Maybe.wraps` - wraps returned from function value via `Maybe.from_value`
+- `Maybe.wraps_optional`  - wraps returned from function value via
+  `Maybe.from_optional`
+
+### Point-free API
+
+All discussed above methods can also be used as functions contained in
+`tibia.maybe` module. They can be found useful when working with iterables of
+`Maybe` for example (for massive filtering and unwrapping without loosing type
+hints).
+
+---
+
+`FutureMaybe` provides exactly the same API, but for "futurized" `Maybe` value.
+
+## `Result` & `FutureResult`
+
+`Result` & `FutureResult` monads provide the ability for indicating computation
+success and error states without implicit error raises. Yes, yes, raising errors
+is actually implicit way, that highly resembles to `goto` operator widely
+forbidden or not implemented for increasing code complexity exponentially. With
+`Result` one does not raise exception, but explicitly returns it (like Rust and
+Go do for example).
+
+It consists of 2 containers:
+
+- `Ok` - indicates successful result
+- `Err` - indicates failed result
+
+Both of the containers store some value, `Ok` - what was actually computed,
+`Err` - some error representation (not always `Exception`).
+
+### Piping API <!--noqa: MD024-->
+
+It is a bit extended relative to `Maybe` or `Value` and consist of the following
+methods:
+
+- `map` / `map_async` - mapping for `Ok` container
+- `map_err` / `map_err_async` - mapping for `Err` container
+- `map_or` / `map_or_async` - mapping and unwrapping for `Ok` container
+- `map_err_or` / `map_err_or_async` - mapping and unwrapping for `Err` container
+- `inspect` / `inspect_async` - applying side-effect function for `Ok` container
+- `inspect_err` / `inspect_err_async` - applying side-effect function for `Err`
+  container
+
+### Unwrapping API <!--noqa: MD024-->
+
+Also provides more options for unwrapping both containers:
+
+- `expect`
+  - `Ok` - returns container value
+  - `Err` - raises `ValueError` with passed error message
+- `unwrap`
+  - `Ok` - returns container value
+  - `Err` - raises `ValueError` with default error message `"must be ok"`
+- `unwrap_or`
+  - `Ok` - returns container value
+  - `Err` - returns passed default value
+- `expect_err`
+  - `Ok` - raises `ValueError` with passed error message
+  - `Err` - returns container value
+- `unwrap_err`
+  - `Ok` - raises `ValueError` with default error message `"must be err"`
+  - `Err` - returns container value
+- `unwrap_err_or`
+  - `Ok` - returns passed default value
+  - `Err` - returns container value
+
+### Logical API <!--noqa: MD024-->
+
+Many more options for validating containers and values:
+
+- `is_ok` - `True` if `Ok`, otherwise `False`
+- `is_ok_and` / `is_ok_and_async` - `True` if `Ok` and contained value satisfies
+  passed predicate, otherwise `False` (returns `Future[bool]` for async version)
+- `is_ok_or` / `is_ok_or` - `True` if `Ok` or `Err` contained value satisfies
+  passed predicate, otherwise `False` (returns `Future[bool]` for async version)
+- `is_err_` - `True` if `Err`, otherwise `False`
+- `is_err__and` / `is_err__and_async` - `True` if `Err` and contained value satisfies
+  passed predicate, otherwise `False` (returns `Future[bool]` for async version)
+- `is_err__or` / `is_err__or` - `True` if `Err` or `Ok` contained value satisfies
+  passed predicate, otherwise `False` (returns `Future[bool]` for async version)
+
+### Decorator API <!--noqa: MD024-->
+
+Provides 2 decorators:
+
+- `Result.wraps` - simply always returns `Ok`-wrapped function result
+- `Result.safe` - if wrapped function:
+  - returned value successfully - wraps it into `Ok`
+  - raised exception in `exceptions` - wraps catches error into `Err`
+  - raised exception not in `exceptions` - exception is raised (undesired
+    behavior)
+
+### Point-free API <!--noqa: MD024-->
+
+Same as `Maybe`, `Result` provides simple functions that can replace any method.
+
+---
+
+`ResultMaybe` provides exactly the same API, but for "futurized" `Result` value.
