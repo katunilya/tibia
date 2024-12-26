@@ -43,6 +43,8 @@ pipeline-based context:
     - `map` - applies passed async function to each element of iterable lazily
     - `filter` - filters elements in iterable with async predicate function
       lazily
+    - `take_while` - takes elements from iterable until predicate is true
+    - `skip_while` - skips elements from iterable until predicate is true
   - threaded
     - `map` - applies passed sync function to each element of iterable in
       threads
@@ -290,7 +292,7 @@ In order to check / validate contained value on can use following methods:
 - `is_some` - `True` if container is `Some`, otherwise `False`
 - `is_empty` - `True` if container is `Empty`, otherwise `False`
 - `is_some_and` - `True` if container is `Some` and passed predicate is `True`
-  (function that checks contained value), otherwise `False`  
+  (function that checks contained value), otherwise `False`
 - `is_empty_or` - `True` if container is `Empty` or passed predicate is `True`
   (function that check contained in `Some` value), otherwise `False`
 
@@ -329,7 +331,7 @@ Based on `from_value` and `from_optional` `Maybe` provides 2 decorators for
 functions:
 
 - `Maybe.wraps` - wraps returned from function value via `Maybe.from_value`
-- `Maybe.wraps_optional`  - wraps returned from function value via
+- `Maybe.wraps_optional` - wraps returned from function value via
   `Maybe.from_optional`
 
 ### Point-free API
