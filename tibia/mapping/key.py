@@ -21,5 +21,3 @@ def filter[T, V, **P](
 
 def iterate[T](mapping: Mapping[T, Any]) -> Iterable[T]:
     yield from mapping.keys()
-
-

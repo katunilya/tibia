@@ -20,3 +20,34 @@ def filter[T, **P](
     for item in iterable:
         if func(item, *args, **kwargs):
             yield item
+
+
+def skip_while[T, **P](
+    iterable: Iterable[T],
+    fn: Callable[Concatenate[T, P], bool],
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> Iterable[T]:
+    is_skipping = True
+
+    for item in iterable:
+        is_skipping = fn(item, *args, **kwargs) if is_skipping else False
+
+        if is_skipping:
+            continue
+
+        yield item
+
+
+def take_while[T, **P](
+    iterable: Iterable[T],
+    fn: Callable[Concatenate[T, P], bool],
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> Iterable[T]:
+    for item in iterable:
+        if fn(item, *args, **kwargs):
+            yield item
+            continue
+
+        break
