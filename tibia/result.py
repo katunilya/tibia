@@ -198,7 +198,7 @@ class Result[T, E]:
         return fr.FutureResult(inspect_err_async(self, fn, *args, **kwargs))
 
     @staticmethod
-    def wraps[**P, R](func: Callable[P, R]):
+    def wraps[**P, R](func: Callable[P, R]) -> Callable[P, Result[R, Exception]]:
         @functools.wraps(func)
         def _wraps(*args: P.args, **kwargs: P.kwargs) -> Result[R, Exception]:
             return Ok(func(*args, **kwargs))
@@ -210,7 +210,7 @@ class Result[T, E]:
         if not exceptions:
             exceptions = (Exception,)
 
-        def _safe[**P, R](func: Callable[P, R]):
+        def _safe[**P, R](func: Callable[P, R]) -> Callable[P, Result[R, Exception]]:
             @functools.wraps(func)
             def __safe(*args: P.args, **kwargs: P.kwargs) -> Result[R, Exception]:
                 try:

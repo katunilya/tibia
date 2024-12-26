@@ -136,7 +136,7 @@ class Maybe[T]:
         return fm.FutureMaybe(inspect_async(self, fn, *args, **kwargs))
 
     @staticmethod
-    def wraps[**P, R](fn: Callable[P, R]):
+    def wraps[**P, R](fn: Callable[P, R]) -> Callable[P, Maybe[R]]:
         @functools.wraps(fn)
         def _wraps(*args: P.args, **kwargs: P.kwargs) -> Maybe[R]:
             return Some(fn(*args, **kwargs))
@@ -144,7 +144,7 @@ class Maybe[T]:
         return _wraps
 
     @staticmethod
-    def wraps_optional[**P, R](fn: Callable[P, R | None]):
+    def wraps_optional[**P, R](fn: Callable[P, R | None]) -> Callable[P, Maybe[R]]:
         @functools.wraps(fn)
         def _wraps_optional(*args: P.args, **kwargs: P.kwargs) -> Maybe[R]:
             return Maybe.from_optional(fn(*args, **kwargs))

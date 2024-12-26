@@ -213,7 +213,9 @@ class FutureResult[T, E]:
 
     @staticmethod
     def safe(*exceptions: Exception):
-        def _safe[**P, R](fn: Callable[P, Awaitable[R]]):
+        def _safe[**P, R](
+            fn: Callable[P, Awaitable[R]],
+        ) -> Callable[P, FutureResult[R, Exception]]:
             @functools.wraps(fn)
             def __safe(*args: P.args, **kwargs: P.kwargs) -> FutureResult[R, Exception]:
                 return FutureResult(safe(*exceptions)(fn)(*args, **kwargs))
@@ -223,7 +225,9 @@ class FutureResult[T, E]:
         return _safe
 
 
-def wraps[**P, R](fn: Callable[P, Awaitable[R]]):
+def wraps[**P, R](
+    fn: Callable[P, Awaitable[R]],
+) -> Callable[P, Awaitable[r.Result[R, Exception]]]:
     @functools.wraps(fn)
     async def _wraps(*args: P.args, **kwargs: P.kwargs) -> r.Result[R, Exception]:
         return r.Ok(await fn(*args, **kwargs))
@@ -235,7 +239,9 @@ def safe(*exceptions: Exception):
     if not exceptions:
         exceptions = (Exception,)
 
-    def _safe[**P, R](fn: Callable[P, Awaitable[R]]):
+    def _safe[**P, R](
+        fn: Callable[P, Awaitable[R]],
+    ) -> Callable[P, Awaitable[r.Result[R, Exception]]]:
         @functools.wraps(fn)
         async def __safe(*args: P.args, **kwargs: P.kwargs) -> r.Result[R, Exception]:
             try:
