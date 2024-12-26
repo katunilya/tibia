@@ -142,7 +142,7 @@ class FutureMaybe[T]:
         return FutureMaybe(inspect_async(self, fn, *args, **kwargs))
 
     @staticmethod
-    def wraps[**P, R](fn: Callable[P, Awaitable[R]]):
+    def wraps[**P, R](fn: Callable[P, Awaitable[R]]) -> Callable[P, FutureMaybe[R]]:
         @functools.wraps(fn)
         def _wraps(*args: P.args, **kwargs: P.kwargs) -> FutureMaybe[R]:
             return FutureMaybe.from_value(fn(*args, **kwargs))
@@ -150,7 +150,9 @@ class FutureMaybe[T]:
         return _wraps
 
     @staticmethod
-    def wraps_optional[**P, R](fn: Callable[P, Awaitable[R | None]]):
+    def wraps_optional[**P, R](
+        fn: Callable[P, Awaitable[R | None]],
+    ) -> Callable[P, FutureMaybe[R]]:
         @functools.wraps(fn)
         def _wraps_optional(*args: P.args, **kwargs: P.kwargs) -> FutureMaybe[R]:
             return FutureMaybe.from_optional(fn(*args, **kwargs))
