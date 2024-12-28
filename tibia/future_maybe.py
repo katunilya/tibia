@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import warnings
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Concatenate
 
@@ -143,6 +144,14 @@ class FutureMaybe[T]:
 
     @staticmethod
     def wraps[**P, R](fn: Callable[P, Awaitable[R]]) -> Callable[P, FutureMaybe[R]]:
+        warnings.simplefilter("always", DeprecationWarning)
+        warnings.warn(
+            "FutureMaybe.wraps will be deprecated in tibia@3.0.0, "
+            "use future_maybe.wraps instead",
+            DeprecationWarning,
+        )
+        warnings.simplefilter("default", DeprecationWarning)
+
         @functools.wraps(fn)
         def _wraps(*args: P.args, **kwargs: P.kwargs) -> FutureMaybe[R]:
             return FutureMaybe.from_value(fn(*args, **kwargs))
@@ -153,6 +162,14 @@ class FutureMaybe[T]:
     def wraps_optional[**P, R](
         fn: Callable[P, Awaitable[R | None]],
     ) -> Callable[P, FutureMaybe[R]]:
+        warnings.simplefilter("always", DeprecationWarning)
+        warnings.warn(
+            "FutureMaybe.wraps_optional will be deprecated in tibia@3.0.0, "
+            "use future_maybe.safe instead",
+            DeprecationWarning,
+        )
+        warnings.simplefilter("default", DeprecationWarning)
+
         @functools.wraps(fn)
         def _wraps_optional(*args: P.args, **kwargs: P.kwargs) -> FutureMaybe[R]:
             return FutureMaybe.from_optional(fn(*args, **kwargs))
@@ -300,3 +317,21 @@ async def inspect_async[T, **P](
     **kwargs: P.kwargs,
 ) -> m.Maybe[T]:
     return await m.inspect_async(await fm._internal, fn, *args, **kwargs)
+
+
+def wraps[**P, T](fn: Callable[P, Awaitable[T]]) -> Callable[P, FutureMaybe[T]]:
+    @functools.wraps(fn)
+    def _wraps(*args: P.args, **kwargs: P.kwargs) -> FutureMaybe[T]:
+        return FutureMaybe.from_value(fn(*args, **kwargs))
+
+    return _wraps
+
+
+def safe[**P, T](
+    fn: Callable[P, Awaitable[T | None]],
+) -> Callable[P, FutureMaybe[T]]:
+    @functools.wraps(fn)
+    def _safe(*args: P.args, **kwargs: P.kwargs) -> FutureMaybe[T]:
+        return FutureMaybe.from_optional(fn(*args, **kwargs))
+
+    return _safe
