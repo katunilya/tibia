@@ -4,7 +4,7 @@ import pytest
 
 from tests.utils import add, add_async, is_even, is_even_async, set_async
 from tibia import mapping
-from tibia.result import Err, Ok, Result, match_ok
+from tibia.result import Err, Ok, Result, match_ok, safe, safe_from, wraps
 
 
 @pytest.mark.parametrize(
@@ -417,3 +417,41 @@ def test_match_ok(fns: list[Callable[[int], Result[int, int]]], is_ok: bool):
     r = match_ok(*fns)(0)
 
     assert r.is_ok() == is_ok
+
+
+def test_safe_new():
+    @safe
+    def safe_get_key(d: dict, k: Any) -> Any:
+        return d[k]
+
+    result = safe_get_key({}, "key")
+
+    err = result.expect_err("KeyError")
+    assert isinstance(err, KeyError)
+
+
+@pytest.mark.parametrize(
+    "exceptions",
+    [
+        [],
+        [KeyError],
+    ],
+)
+def test_safe_from(exceptions: list[Exception]):
+    @safe_from(*exceptions)
+    def safe_get_key(d: dict, k: Any) -> Any:
+        return d[k]
+
+    result = safe_get_key({}, "key")
+
+    err = result.expect_err("KeyError")
+    assert isinstance(err, KeyError)
+
+
+def test_wraps_new():
+    wraps_add = wraps(add)
+
+    result = wraps_add(1, 1)
+
+    assert isinstance(result, Ok)
+    assert result == 2
