@@ -4,7 +4,7 @@ import pytest
 
 from tests.utils import add, add_async, is_even, is_even_async, set_async
 from tibia import mapping
-from tibia.maybe import Empty, Maybe, Some
+from tibia.maybe import Empty, Maybe, Some, match_some
 
 
 @pytest.mark.parametrize(
@@ -297,3 +297,16 @@ def test_eq(left_maybe: Maybe[Any], right_maybe: Maybe[Any], target: Any):
     result = left_maybe == right_maybe
 
     assert result is target
+
+
+@pytest.mark.parametrize(
+    ("fns", "is_some"),
+    [
+        ([lambda _: Empty(), lambda _: Empty(), lambda x: Some(x + 2)], True),
+        ([lambda _: Empty(), lambda _: Empty(), lambda _: Empty()], False),
+    ],
+)
+def test_match_ok(fns: list[Callable[[int], Maybe[int]]], is_some: bool):
+    m = match_some(*fns)(0)
+
+    assert m.is_some() == is_some

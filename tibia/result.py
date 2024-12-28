@@ -523,3 +523,16 @@ async def inspect_err_async[T, E, **P](
         await fn(r._internal, *args, **kwargs)
 
     return r
+
+
+def match_ok[**P, T, E](*fns: Callable[P, Result[T, E]]) -> Callable[P, Result[T, E]]:
+    def _match_ok(*args: P.args, **kwargs: P.kwargs) -> Result[T, E]:
+        for fn in fns:
+            r = fn(*args, **kwargs)
+
+            if r.is_ok():
+                return r
+
+        return Err(ValueError("no option returned ok"))
+
+    return _match_ok

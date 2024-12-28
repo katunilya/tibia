@@ -354,3 +354,16 @@ async def inspect_async[T, **P](
         await fn(m._internal, *args, **kwargs)
 
     return m
+
+
+def match_some[**P, T](*fns: Callable[P, Maybe[T]]) -> Callable[P, Maybe[T]]:
+    def _match_some(*args: P.args, **kwargs: P.kwargs) -> Maybe[T]:
+        for fn in fns:
+            m = fn(*args, **kwargs)
+
+            if m.is_some():
+                return m
+
+        return _Empty
+
+    return _match_some
