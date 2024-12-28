@@ -4,7 +4,7 @@ import pytest
 
 from tests.utils import add, add_async, get_async, is_even, is_even_async, set_async
 from tibia import mapping
-from tibia.future_maybe import FutureMaybe
+from tibia.future_maybe import FutureMaybe, safe, wraps
 from tibia.maybe import Empty, Maybe, Some
 from tibia.utils import identity_async
 
@@ -306,8 +306,11 @@ async def test_inspect_async(maybe: Maybe[dict], target: dict | None):
 )
 async def test_wraps(data: dict, target: Maybe[str | None]):
     maybe_get = FutureMaybe.wraps(get_async)
+    maybe_get_new = wraps(get_async)
 
-    assert (await maybe_get(data, "key")) == target
+    assert (
+        (await maybe_get(data, "key")) == (await maybe_get_new(data, "key")) == target
+    )
 
 
 @pytest.mark.asyncio
@@ -320,5 +323,8 @@ async def test_wraps(data: dict, target: Maybe[str | None]):
 )
 async def test_wraps_optional(data: dict, target: Maybe[str | None]):
     maybe_get = FutureMaybe.wraps_optional(get_async)
+    maybe_get_new = safe(get_async)
 
-    assert (await maybe_get(data, "key")) == target
+    assert (
+        (await maybe_get(data, "key")) == (await maybe_get_new(data, "key")) == target
+    )

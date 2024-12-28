@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import warnings
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Concatenate, cast
 
@@ -137,6 +138,13 @@ class Maybe[T]:
 
     @staticmethod
     def wraps[**P, R](fn: Callable[P, R]) -> Callable[P, Maybe[R]]:
+        warnings.simplefilter("always", DeprecationWarning)
+        warnings.warn(
+            "Maybe.wraps will be deprecated in tibia@3.0.0, use maybe.wraps instead",
+            DeprecationWarning,
+        )
+        warnings.simplefilter("default", DeprecationWarning)
+
         @functools.wraps(fn)
         def _wraps(*args: P.args, **kwargs: P.kwargs) -> Maybe[R]:
             return Some(fn(*args, **kwargs))
@@ -145,6 +153,14 @@ class Maybe[T]:
 
     @staticmethod
     def wraps_optional[**P, R](fn: Callable[P, R | None]) -> Callable[P, Maybe[R]]:
+        warnings.simplefilter("always", DeprecationWarning)
+        warnings.warn(
+            "Maybe.wraps_optional will be deprecated in tibia@3.0.0, "
+            "use maybe.safe instead",
+            DeprecationWarning,
+        )
+        warnings.simplefilter("default", DeprecationWarning)
+
         @functools.wraps(fn)
         def _wraps_optional(*args: P.args, **kwargs: P.kwargs) -> Maybe[R]:
             return Maybe.from_optional(fn(*args, **kwargs))
@@ -367,3 +383,19 @@ def match_some[**P, T](*fns: Callable[P, Maybe[T]]) -> Callable[P, Maybe[T]]:
         return _Empty
 
     return _match_some
+
+
+def wraps[**P, T](fn: Callable[P, T]) -> Callable[P, Maybe[T]]:
+    @functools.wraps(fn)
+    def _wraps(*args: P.args, **kwargs: P.kwargs) -> Maybe[T]:
+        return Some(fn(*args, **kwargs))
+
+    return _wraps
+
+
+def safe[**P, T](fn: Callable[P, T | None]) -> Callable[P, Maybe[T]]:
+    @functools.wraps(fn)
+    def _wraps(*args: P.args, **kwargs: P.kwargs) -> Maybe[T]:
+        return Maybe.from_optional(fn(*args, **kwargs))
+
+    return _wraps

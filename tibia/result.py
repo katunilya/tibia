@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import warnings
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Concatenate, cast
 
@@ -199,6 +200,14 @@ class Result[T, E]:
 
     @staticmethod
     def wraps[**P, R](func: Callable[P, R]) -> Callable[P, Result[R, Exception]]:
+        warnings.simplefilter("always", DeprecationWarning)
+        warnings.warn(
+            "Result.wraps will be deprecated in tibia@3.0.0, "
+            "use result.wraps instead",
+            DeprecationWarning,
+        )
+        warnings.simplefilter("default", DeprecationWarning)
+
         @functools.wraps(func)
         def _wraps(*args: P.args, **kwargs: P.kwargs) -> Result[R, Exception]:
             return Ok(func(*args, **kwargs))
@@ -207,6 +216,14 @@ class Result[T, E]:
 
     @staticmethod
     def safe(*exceptions: Exception):
+        warnings.simplefilter("always", DeprecationWarning)
+        warnings.warn(
+            "Result.safe will be deprecated in tibia@3.0.0, "
+            "use result.safe or result.safe_from instead",
+            DeprecationWarning,
+        )
+        warnings.simplefilter("default", DeprecationWarning)
+
         if not exceptions:
             exceptions = (Exception,)
 
@@ -536,3 +553,39 @@ def match_ok[**P, T, E](*fns: Callable[P, Result[T, E]]) -> Callable[P, Result[T
         return Err(ValueError("no option returned ok"))
 
     return _match_ok
+
+
+def wraps[**P, T](fn: Callable[P, T]) -> Callable[P, Result[T, Exception]]:
+    @functools.wraps(fn)
+    def _wraps(*args: P.args, **kwargs: P.kwargs) -> Result[T, Exception]:
+        return Ok(fn(*args, **kwargs))
+
+    return _wraps
+
+
+def safe_from(*exceptions: Exception):
+    if not exceptions:
+        exceptions = (Exception,)
+
+    def _safe_from[**P, T](fn: Callable[P, T]) -> Callable[P, Result[T, Exception]]:
+        @functools.wraps(fn)
+        def __safe_from(*args: P.args, **kwargs: P.kwargs) -> Result[T, Exception]:
+            try:
+                return Ok(fn(*args, **kwargs))
+            except exceptions as exc:
+                return Err(exc)
+
+        return __safe_from
+
+    return _safe_from
+
+
+def safe[**P, T](fn: Callable[P, T]) -> Callable[P, Result[T, Exception]]:
+    @functools.wraps(fn)
+    def _safe(*args: P.args, **kwargs: P.kwargs) -> Result[T, Exception]:
+        try:
+            return Ok(fn(*args, **kwargs))
+        except Exception as exc:
+            return Err(exc)
+
+    return _safe

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import warnings
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Concatenate
 
@@ -205,53 +206,40 @@ class FutureResult[T, E]:
 
     @staticmethod
     def wraps[**P, R](fn: Callable[P, Awaitable[R]]):
+        warnings.simplefilter("always", DeprecationWarning)
+        warnings.warn(
+            "FutureResult.wraps will be deprecated in tibia@3.0.0, "
+            "use future_result.wraps instead",
+            DeprecationWarning,
+        )
+        warnings.simplefilter("default", DeprecationWarning)
+
         @functools.wraps(fn)
         def _wraps(*args: P.args, **kwargs: P.kwargs) -> FutureResult[R, Exception]:
-            return FutureResult(wraps(fn)(*args, **kwargs))
+            return FutureResult(_async_wraps(fn)(*args, **kwargs))
 
         return _wraps
 
     @staticmethod
     def safe(*exceptions: Exception):
+        warnings.simplefilter("always", DeprecationWarning)
+        warnings.warn(
+            "FutureResult.safe will be deprecated in tibia@3.0.0, "
+            "use future_result.safe or future_result.safe_from instead",
+            DeprecationWarning,
+        )
+        warnings.simplefilter("default", DeprecationWarning)
+
         def _safe[**P, R](
             fn: Callable[P, Awaitable[R]],
         ) -> Callable[P, FutureResult[R, Exception]]:
             @functools.wraps(fn)
             def __safe(*args: P.args, **kwargs: P.kwargs) -> FutureResult[R, Exception]:
-                return FutureResult(safe(*exceptions)(fn)(*args, **kwargs))
+                return FutureResult(_async_safe(*exceptions)(fn)(*args, **kwargs))
 
             return __safe
 
         return _safe
-
-
-def wraps[**P, R](
-    fn: Callable[P, Awaitable[R]],
-) -> Callable[P, Awaitable[r.Result[R, Exception]]]:
-    @functools.wraps(fn)
-    async def _wraps(*args: P.args, **kwargs: P.kwargs) -> r.Result[R, Exception]:
-        return r.Ok(await fn(*args, **kwargs))
-
-    return _wraps
-
-
-def safe(*exceptions: Exception):
-    if not exceptions:
-        exceptions = (Exception,)
-
-    def _safe[**P, R](
-        fn: Callable[P, Awaitable[R]],
-    ) -> Callable[P, Awaitable[r.Result[R, Exception]]]:
-        @functools.wraps(fn)
-        async def __safe(*args: P.args, **kwargs: P.kwargs) -> r.Result[R, Exception]:
-            try:
-                return r.Ok(await fn(*args, **kwargs))
-            except exceptions as exc:
-                return r.Err(exc)
-
-        return __safe
-
-    return _safe
 
 
 async def is_ok[T, E](fr: FutureResult[T, E]) -> bool:
@@ -468,3 +456,70 @@ async def inspect_err_async[T, E, **P](
     **kwargs: P.kwargs,
 ) -> r.Result[T, E]:
     return await r.inspect_err_async(await fr, fn, *args, **kwargs)
+
+
+def _async_wraps[**P, R](
+    fn: Callable[P, Awaitable[R]],
+) -> Callable[P, Awaitable[r.Result[R, Exception]]]:
+    @functools.wraps(fn)
+    async def _wraps(*args: P.args, **kwargs: P.kwargs) -> r.Result[R, Exception]:
+        return r.Ok(await fn(*args, **kwargs))
+
+    return _wraps
+
+
+def _async_safe(*exceptions: Exception):
+    if not exceptions:
+        exceptions = (Exception,)
+
+    def _safe[**P, R](
+        fn: Callable[P, Awaitable[R]],
+    ) -> Callable[P, Awaitable[r.Result[R, Exception]]]:
+        @functools.wraps(fn)
+        async def __safe(*args: P.args, **kwargs: P.kwargs) -> r.Result[R, Exception]:
+            try:
+                return r.Ok(await fn(*args, **kwargs))
+            except exceptions as exc:
+                return r.Err(exc)
+
+        return __safe
+
+    return _safe
+
+
+def wraps[**P, T](
+    fn: Callable[P, Awaitable[T]],
+) -> Callable[P, FutureResult[T, Exception]]:
+    @functools.wraps(fn)
+    def _wraps(*args: P.args, **kwargs: P.kwargs) -> FutureResult[T, Exception]:
+        return FutureResult(_async_wraps(fn)(*args, **kwargs))
+
+    return _wraps
+
+
+def safe[**P, T](
+    fn: Callable[P, Awaitable[T]],
+) -> Callable[P, FutureResult[T, Exception]]:
+    @functools.wraps(fn)
+    def _wraps(*args: P.args, **kwargs: P.kwargs) -> FutureResult[T, Exception]:
+        return FutureResult(_async_safe()(fn)(*args, **kwargs))
+
+    return _wraps
+
+
+def safe_from(*exceptions: Exception):
+    if not exceptions:
+        exceptions = (Exception,)
+
+    def _safe_from[**P, T](
+        fn: Callable[P, Awaitable[T]],
+    ) -> Callable[P, FutureResult[T, Exception]]:
+        @functools.wraps(fn)
+        def __safe_from(
+            *args: P.args, **kwargs: P.kwargs
+        ) -> FutureResult[T, Exception]:
+            return FutureResult(_async_safe(*exceptions)(fn)(*args, **kwargs))
+
+        return __safe_from
+
+    return _safe_from

@@ -4,7 +4,7 @@ import pytest
 
 from tests.utils import add, add_async, is_even, is_even_async, set_async
 from tibia import mapping
-from tibia.maybe import Empty, Maybe, Some, match_some
+from tibia.maybe import Empty, Maybe, Some, match_some, safe, wraps
 
 
 @pytest.mark.parametrize(
@@ -266,8 +266,9 @@ async def test_inspect_async(maybe: Maybe[dict], target: dict | None):
 )
 def test_wraps(data: dict, target: Maybe[str | None]):
     maybe_get = Maybe.wraps(dict.get)
+    maybe_get_new = wraps(dict.get)
 
-    assert maybe_get(data, "key") == target
+    assert maybe_get(data, "key") == maybe_get_new(data, "key") == target
 
 
 @pytest.mark.parametrize(
@@ -279,8 +280,9 @@ def test_wraps(data: dict, target: Maybe[str | None]):
 )
 def test_wraps_optional(data: dict, target: Maybe[str | None]):
     maybe_get = Maybe.wraps_optional(dict.get)
+    maybe_get_new = safe(dict.get)
 
-    assert maybe_get(data, "key") == target
+    assert maybe_get(data, "key") == maybe_get_new(data, "key") == target
 
 
 @pytest.mark.parametrize(
