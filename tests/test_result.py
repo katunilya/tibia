@@ -1,10 +1,10 @@
-from typing import Any
+from typing import Any, Callable
 
 import pytest
 
 from tests.utils import add, add_async, is_even, is_even_async, set_async
 from tibia import mapping
-from tibia.result import Err, Ok, Result
+from tibia.result import Err, Ok, Result, match_ok
 
 
 @pytest.mark.parametrize(
@@ -404,3 +404,16 @@ def test_eq(left_result: Result, right_result: Result, target: bool):
     result = left_result == right_result
 
     assert result == target
+
+
+@pytest.mark.parametrize(
+    ("fns", "is_ok"),
+    [
+        ([lambda x: Err(x), lambda x: Err(x + 1), lambda x: Ok(x + 2)], True),
+        ([lambda x: Err(x), lambda x: Err(x + 1), lambda x: Err(x + 2)], False),
+    ],
+)
+def test_match_ok(fns: list[Callable[[int], Result[int, int]]], is_ok: bool):
+    r = match_ok(*fns)(0)
+
+    assert r.is_ok() == is_ok
