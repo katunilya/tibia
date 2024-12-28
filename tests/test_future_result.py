@@ -5,7 +5,7 @@ import pytest
 
 from tests.utils import add, add_async, is_even, is_even_async, set_async
 from tibia import mapping
-from tibia.future_result import FutureResult
+from tibia.future_result import FutureResult, safe, safe_from, wraps
 from tibia.result import Err, Ok, Result
 from tibia.utils import identity_async
 
@@ -445,6 +445,51 @@ async def test_wraps():
 )
 async def test_safe(exceptions: list[Exception]):
     @FutureResult.safe(*exceptions)
+    async def safe_get_key(d: dict, k: Any) -> Any:
+        await asyncio.sleep(0.05)
+
+        return d[k]
+
+    result = safe_get_key({}, "key")
+
+    err = await result.expect_err("KeyError")
+    assert isinstance(err, KeyError)
+
+
+@pytest.mark.asyncio
+async def test_wraps_new():
+    wraps_add = wraps(add_async)
+
+    result = await wraps_add(1, 1)
+
+    assert isinstance(result, Ok)
+    assert result == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "exceptions",
+    [
+        [],
+        [KeyError],
+    ],
+)
+async def test_safe_from(exceptions: list[Exception]):
+    @safe_from(*exceptions)
+    async def safe_get_key(d: dict, k: Any) -> Any:
+        await asyncio.sleep(0.05)
+
+        return d[k]
+
+    result = safe_get_key({}, "key")
+
+    err = await result.expect_err("KeyError")
+    assert isinstance(err, KeyError)
+
+
+@pytest.mark.asyncio
+async def test_safe_new():
+    @safe
     async def safe_get_key(d: dict, k: Any) -> Any:
         await asyncio.sleep(0.05)
 
