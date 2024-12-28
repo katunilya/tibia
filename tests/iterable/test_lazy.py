@@ -55,3 +55,13 @@ def test_take_while(
     result = list(result_gen)
 
     assert result == target
+
+
+def test_join():
+    result_gen = iterable.lazy.join([[0], [1, 2, 3], [4, 5]])
+
+    assert isgenerator(result_gen)
+
+    result = list(result_gen)
+
+    assert result == [0, 1, 2, 3, 4, 5]

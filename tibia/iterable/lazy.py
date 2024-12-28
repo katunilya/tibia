@@ -51,3 +51,8 @@ def take_while[T, **P](
             continue
 
         break
+
+
+def join[T](iterable: Iterable[Iterable[T]]) -> Iterable[T]:
+    for sub_iterable in iterable:
+        yield from sub_iterable
