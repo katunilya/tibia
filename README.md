@@ -39,12 +39,14 @@ pipeline-based context:
   - async (aio)
     - `map` - applies passed async function to each element of iterable
     - `filter` - filters elements in iterable with async predicate function
+    - `group_by` - groups items of iterable with passed function
   - lazy
     - `map` - applies passed async function to each element of iterable lazily
     - `filter` - filters elements in iterable with async predicate function
       lazily
     - `take_while` - takes elements from iterable until predicate is true
     - `skip_while` - skips elements from iterable until predicate is true
+    - `join` - flattens iterable of iterables lazily
   - threaded
     - `map` - applies passed sync function to each element of iterable in
       threads
@@ -330,9 +332,11 @@ containers:
 Based on `from_value` and `from_optional` `Maybe` provides 2 decorators for
 functions:
 
-- `Maybe.wraps` - wraps returned from function value via `Maybe.from_value`
-- `Maybe.wraps_optional` - wraps returned from function value via
-  `Maybe.from_optional`
+- `wraps` - wraps returned from function value via `Maybe.from_value`
+- `safe` - wraps returned from function value via `Maybe.from_optional`
+
+> One might also find `Maybe.wraps` & `Maybe.wraps_optional` static methods, but
+> they are deprecated and not intended to be used.
 
 ### Point-free API
 
@@ -417,12 +421,14 @@ Many more options for validating containers and values:
 
 Provides 2 decorators:
 
-- `Result.wraps` - simply always returns `Ok`-wrapped function result
-- `Result.safe` - if wrapped function:
-  - returned value successfully - wraps it into `Ok`
-  - raised exception in `exceptions` - wraps catches error into `Err`
-  - raised exception not in `exceptions` - exception is raised (undesired
-    behavior)
+- `wraps` - simply always returns `Ok`-wrapped function result
+- `safe` - `try-excepts` `Exception` and returns `Ok` if `Exception` was not
+  raised, otherwise wraps `Exception` into `Err`
+- `safe_from` - same as `safe` but firstly it excepts a tuple of `Exception`
+  types to be excepted in `try-except` block
+
+> One might also find `Result.wraps` & `Result.safe` static methods, but they
+> are deprecated and not intended to be used.
 
 ### Point-free API <!--noqa: MD024-->
 
