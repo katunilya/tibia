@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import reduce as _py_reduce
-from typing import Any, Callable, Concatenate, Iterable
+from typing import Any, Callable, Concatenate, Iterable, Mapping
 
 from tibia.utils import identity
 
@@ -114,3 +114,22 @@ def skip[T](
 
 def join[T](iterables: Iterable[Iterable[T]]) -> list[T]:
     return [item for iterable in iterables for item in iterable]
+
+
+def group_by[T, **P, K](
+    iterable: Iterable[T],
+    fn: Callable[Concatenate[T, P], K],
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> Mapping[K, list[T]]:
+    mapping = dict[K, list[T]]()
+
+    for item in iterable:
+        key = fn(item, *args, **kwargs)
+
+        if key not in mapping:
+            mapping[key] = []
+
+        mapping[key].append(item)
+
+    return mapping

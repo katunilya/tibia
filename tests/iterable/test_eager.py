@@ -114,3 +114,9 @@ def test_join():
     result = iterable.join([[0], [1, 2, 3], [4, 5]])
 
     assert result == [0, 1, 2, 3, 4, 5]
+
+
+def test_group_by():
+    result = iterable.group_by([0, 1, 2, 3, 4, 5], is_even)
+
+    assert result == {True: [0, 2, 4], False: [1, 3, 5]}

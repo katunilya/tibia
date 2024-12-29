@@ -2,6 +2,7 @@ from . import aio, lazy, threaded
 from .eager import (
     filter,
     first,
+    group_by,
     join,
     map,
     reduce,
@@ -18,6 +19,7 @@ __all__ = [
     "threaded",
     "filter",
     "first",
+    "group_by",
     "join",
     "map",
     "reduce",
