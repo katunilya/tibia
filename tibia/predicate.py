@@ -65,8 +65,8 @@ def when[T, **P](
 
 def when_or[T, **P, R](
     value: T,
-    other: R,
     pfn: Callable[[T], bool],
+    other: R,
     fn: Callable[Concatenate[T, P], R],
     *args: P.args,
     **kwargs: P.kwargs,

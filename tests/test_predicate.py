@@ -93,6 +93,6 @@ def test_when(value: int, target: int) -> None:
     ],
 )
 def test_when_or(value: int, target: str) -> None:
-    result = Value(value).map(when_or, "no", lambda i: i > 0, str).unwrap()
+    result = Value(value).map(when_or, lambda i: i > 0, "no", str).unwrap()
 
     assert result == target
