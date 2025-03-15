@@ -1,5 +1,5 @@
 import asyncio
-from typing import Awaitable, Callable, Concatenate, Iterable
+from typing import Any, Awaitable, Callable, Concatenate, Iterable
 
 
 async def map[T, **P, R](
@@ -9,6 +9,17 @@ async def map[T, **P, R](
     **kwargs: P.kwargs,
 ) -> list[R]:
     return await asyncio.gather(*[func(item, *args, **kwargs) for item in iterable])
+
+
+async def inspect[T, **P](
+    iterable: Iterable[T],
+    func: Callable[Concatenate[T, P], Awaitable[Any]],
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> list[T]:
+    _iterable = list(iterable)
+    await asyncio.gather(*[func(item, *args, **kwargs) for item in _iterable])
+    return _iterable
 
 
 async def filter[T, **P](

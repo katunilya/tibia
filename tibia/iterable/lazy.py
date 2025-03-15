@@ -1,4 +1,4 @@
-from typing import Callable, Concatenate, Iterable
+from typing import Any, Callable, Concatenate, Iterable
 
 
 def map[T, **P, R](
@@ -9,6 +9,17 @@ def map[T, **P, R](
 ) -> Iterable[R]:
     for item in iterable:
         yield func(item, *args, **kwargs)
+
+
+def inspect[T, **P](
+    iterable: Iterable[T],
+    func: Callable[Concatenate[T, P], Any],
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> Iterable[T]:
+    for item in iterable:
+        func(item, *args, **kwargs)
+        yield item
 
 
 def filter[T, **P](
