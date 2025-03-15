@@ -15,6 +15,21 @@ def map[T, **P, R](
     return [func(item, *args, **kwargs) for item in iterable]
 
 
+def inspect[T, **P](
+    iterable: Iterable[T],
+    func: Callable[Concatenate[T, P], Any],
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> list[T]:
+    result = []
+
+    for item in iterable:
+        func(item, *args, **kwargs)
+        result.append(item)
+
+    return result
+
+
 def filter[T, **P](
     iterable: Iterable[T],
     func: Callable[Concatenate[T, P], bool],

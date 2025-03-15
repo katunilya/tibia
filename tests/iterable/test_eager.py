@@ -17,6 +17,18 @@ def test_map(numbers: list[int]):
     assert result == [add(x, 1) for x in numbers]
 
 
+def test_inspect():
+    iterable_ = [{"x": i} for i in range(10)]
+
+    def set_0(item: dict[str, int]) -> None:
+        item["x"] = 0
+
+    result = Value(iterable_).map(iterable.inspect, set_0).unwrap()
+
+    assert isinstance(result, list)
+    assert result == [{"x": 0} for _ in range(10)]
+
+
 def test_filter(numbers: list[int]):
     result = Value(numbers).map(deepcopy).map(iterable.filter, is_even).unwrap()
 
