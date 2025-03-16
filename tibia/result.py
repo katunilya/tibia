@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import warnings
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Concatenate, cast
+from typing import Any, Awaitable, Callable, Concatenate, Iterable, cast
 
 from tibia import future_result as fr
 from tibia.future import Future
@@ -202,8 +202,7 @@ class Result[T, E]:
     def wraps[**P, R](func: Callable[P, R]) -> Callable[P, Result[R, Exception]]:
         warnings.simplefilter("always", DeprecationWarning)
         warnings.warn(
-            "Result.wraps will be deprecated in tibia@3.0.0, "
-            "use result.wraps instead",
+            "Result.wraps will be deprecated in tibia@3.0.0, use result.wraps instead",
             DeprecationWarning,
         )
         warnings.simplefilter("default", DeprecationWarning)
@@ -589,3 +588,20 @@ def safe[**P, T](fn: Callable[P, T]) -> Callable[P, Result[T, Exception]]:
             return Err(exc)
 
     return _safe
+
+
+def safe_iterate[**P, T](
+    fn: Callable[P, Iterable[T]],
+) -> Callable[P, Iterable[Result[T, Exception]]]:
+    @functools.wraps(fn)
+    def _safe_iterate(
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> Iterable[Result[T, Exception]]:
+        try:
+            for item in fn(*args, **kwargs):  # pragma: no cover
+                yield Ok(item)
+        except Exception as exc:
+            yield Err(exc)
+
+    return _safe_iterate

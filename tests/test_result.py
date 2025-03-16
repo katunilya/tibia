@@ -1,10 +1,10 @@
-from typing import Any, Callable
+from typing import Any, Callable, Iterable
 
 import pytest
 
 from tests.utils import add, add_async, is_even, is_even_async, set_async
 from tibia import mapping
-from tibia.result import Err, Ok, Result, match_ok, safe, safe_from, wraps
+from tibia.result import Err, Ok, Result, match_ok, safe, safe_from, safe_iterate, wraps
 
 
 @pytest.mark.parametrize(
@@ -455,3 +455,18 @@ def test_wraps_new():
 
     assert isinstance(result, Ok)
     assert result == 2
+
+
+def test_safe_iterate():
+    @safe_iterate
+    def gen() -> Iterable[int]:
+        yield 1
+        raise Exception()
+        yield 2
+
+    items = list(gen())
+
+    assert len(items) == 2
+    assert isinstance(items[0], Ok)
+    assert items[0].unwrap() == 1
+    assert isinstance(items[1], Err)
