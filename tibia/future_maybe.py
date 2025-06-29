@@ -17,12 +17,12 @@ class FutureMaybe[T]:
         return self._internal.__await__()
 
     @staticmethod
-    def from_value[I](value: I) -> FutureMaybe[I]:
+    def from_value[I](value: Awaitable[I]) -> FutureMaybe[I]:
         return FutureMaybe(from_value(value))
 
     @staticmethod
     def from_value_when[I, **P](
-        value: I,
+        value: Awaitable[I],
         fn: Callable[Concatenate[I, P], bool],
         *args: P.args,
         **kwargs: P.kwargs,
@@ -30,12 +30,12 @@ class FutureMaybe[T]:
         return FutureMaybe(from_value_when(value, fn, *args, **kwargs))
 
     @staticmethod
-    def from_optional[I](value: I | None) -> FutureMaybe[I]:
+    def from_optional[I](value: Awaitable[I | None]) -> FutureMaybe[I]:
         return FutureMaybe(from_optional(value))
 
     @staticmethod
     def from_optional_when[I, **P](
-        value: I | None,
+        value: Awaitable[I | None],
         fn: Callable[Concatenate[I, P], bool],
         *args: P.args,
         **kwargs: P.kwargs,
@@ -55,7 +55,7 @@ class FutureMaybe[T]:
 
     def is_empty_or_async[**P](
         self,
-        fn: Callable[Concatenate[T, P], bool],
+        fn: Callable[Concatenate[T, P], Awaitable[bool]],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> Future[bool]:
