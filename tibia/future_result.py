@@ -51,10 +51,10 @@ class FutureResult[T, E]:
     ) -> Future[bool]:
         return Future(is_ok_or_async(self, fn, *args, **kwargs))
 
-    def expect[T, E](self, what: str) -> Future[T]:
+    def expect(self, what: str) -> Future[T]:
         return Future(expect(self, what))
 
-    def unwrap[T, E](self) -> Future[T]:
+    def unwrap(self) -> Future[T]:
         return Future(unwrap(self))
 
     def unwrap_or(self, default: T) -> Future[T]:

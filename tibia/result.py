@@ -313,7 +313,13 @@ def expect[T, E](r: Result[T, E], what: str) -> T:
     if isinstance(r, Ok):
         return r._internal
 
-    raise ValueError(what)
+    exc = ValueError(what)
+    err = cast(Err, r)
+
+    if isinstance(err._internal, Exception):  # pragma: no cover
+        exc = exc.with_traceback(err._internal.__traceback__)
+
+    raise exc
 
 
 def unwrap[T, E](r: Result[T, E]) -> T:
